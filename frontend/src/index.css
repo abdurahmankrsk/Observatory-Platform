@@ -1,0 +1,308 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   AstroObservatory — Global Styles
+   Design: Precision Dark Observatory | Aesthetic: Industrial Utilitarian + Cosmic Sublime
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Design Tokens ──────────────────────────────────────────────────── */
+:root {
+  /* Color story */
+  --color-void: #010A14;
+  --color-space: #020B18;
+  --color-deep: #051825;
+  --color-panel: rgba(5, 24, 37, 0.85);
+
+  /* Accent system */
+  --color-blue: #4FACFE;
+  --color-glow: #00D4FF;
+  --color-amber: #FF6B35;
+  --color-gold: #FFD700;
+  --color-green-hab: #39D353;
+
+  /* Neutral */
+  --color-star: #F8F9FF;
+  --color-grey: #8CA3C0;
+  --color-dim: #4A5568;
+
+  /* Typography */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Spacing rhythm: 4px base grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Glows */
+  --glow-blue: 0 0 20px rgba(79, 172, 254, 0.4), 0 0 60px rgba(79, 172, 254, 0.15);
+  --glow-amber: 0 0 20px rgba(255, 107, 53, 0.4), 0 0 60px rgba(255, 107, 53, 0.15);
+  --glow-gold: 0 0 15px rgba(255, 215, 0, 0.5);
+
+  /* Border */
+  --border-dim: 1px solid rgba(79, 172, 254, 0.15);
+  --border-active: 1px solid rgba(79, 172, 254, 0.5);
+}
+
+/* ── Base Reset ─────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-void);
+  color: var(--color-star);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  cursor: crosshair;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* ── Typography Scale ───────────────────────────────────────────────────── */
+.text-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+.text-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-grey);
+}
+
+/* ── Panel / Glass Components ───────────────────────────────────────────── */
+.panel {
+  background: var(--color-panel);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--border-dim);
+  border-radius: 2px;
+}
+
+.panel--active {
+  border: var(--border-active);
+  box-shadow: var(--glow-blue);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-8);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-space);
+  background: var(--color-blue);
+  border: none;
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:hover {
+  background: var(--color-glow);
+  box-shadow: var(--glow-blue);
+  transform: translateY(-1px);
+}
+
+.btn-primary:hover::before {
+  opacity: 1;
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-grey);
+  background: transparent;
+  border: var(--border-dim);
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  color: var(--color-blue);
+  border-color: rgba(79, 172, 254, 0.4);
+  box-shadow: inset 0 0 20px rgba(79, 172, 254, 0.05);
+}
+
+/* ── Input ───────────────────────────────────────────────────────────────── */
+.input-field {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-star);
+  background: rgba(5, 24, 37, 0.8);
+  border: var(--border-dim);
+  border-radius: 1px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  caret-color: var(--color-blue);
+}
+
+.input-field:focus {
+  border-color: rgba(79, 172, 254, 0.5);
+  box-shadow: 0 0 0 1px rgba(79, 172, 254, 0.2);
+}
+
+.input-field::placeholder {
+  color: var(--color-dim);
+}
+
+/* ── Glow Utilities ─────────────────────────────────────────────────────── */
+.glow-blue { text-shadow: 0 0 20px rgba(79, 172, 254, 0.8), 0 0 40px rgba(79, 172, 254, 0.4); }
+.glow-amber { text-shadow: 0 0 20px rgba(255, 107, 53, 0.8), 0 0 40px rgba(255, 107, 53, 0.4); }
+.glow-gold { text-shadow: var(--glow-gold); }
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(79, 172, 254, 0.3) 30%,
+    rgba(79, 172, 254, 0.3) 70%,
+    transparent 100%
+  );
+}
+
+/* ── Corner decoration (reticle aesthetic) ──────────────────────────────── */
+.corner-tl, .corner-tr, .corner-bl, .corner-br {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: rgba(79, 172, 254, 0.6);
+  border-style: solid;
+}
+.corner-tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
+.corner-tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+.corner-bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+.corner-br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+/* ── Scanline overlay ───────────────────────────────────────────────────── */
+.scanlines {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  z-index: 9999;
+}
+
+/* ── Fade transition overlay ────────────────────────────────────────────── */
+.fade-overlay {
+  position: fixed;
+  inset: 0;
+  background: #010A14;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ── Loading spinner ────────────────────────────────────────────────────── */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(79, 172, 254, 0.2);
+  border-top-color: var(--color-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--color-space); }
+::-webkit-scrollbar-thumb { background: rgba(79, 172, 254, 0.3); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(79, 172, 254, 0.5); }
+
+/* ── Selection ──────────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(79, 172, 254, 0.3);
+  color: var(--color-star);
+}
+
+/* ── Canvas full-screen ─────────────────────────────────────────────────── */
+canvas {
+  display: block;
+}
+
+/* ── Info badge ─────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-radius: 1px;
+}
+
+.badge--planet { color: #39D353; background: rgba(57, 211, 83, 0.1); border: 1px solid rgba(57, 211, 83, 0.3); }
+.badge--exoplanet { color: #4FACFE; background: rgba(79, 172, 254, 0.1); border: 1px solid rgba(79, 172, 254, 0.3); }
+.badge--asteroid { color: #FF6B35; background: rgba(255, 107, 53, 0.1); border: 1px solid rgba(255, 107, 53, 0.3); }
+.badge--star { color: #FFD700; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); }
+.badge--nebula { color: #C084FC; background: rgba(192, 132, 252, 0.1); border: 1px solid rgba(192, 132, 252, 0.3); }
+.badge--galaxy { color: #FB923C; background: rgba(251, 146, 60, 0.1); border: 1px solid rgba(251, 146, 60, 0.3); }
