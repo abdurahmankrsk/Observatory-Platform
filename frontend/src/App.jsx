@@ -86,6 +86,8 @@ function checkWebGL() {
 // ── Main App ───────────────────────────────────────────────────────────────
 function AppContent() {
   const scene = useObservatoryStore((s) => s.scene)
+  const isAutoRotating = useObservatoryStore((s) => s.isAutoRotating)
+  const toggleAutoRotate = useObservatoryStore((s) => s.toggleAutoRotate)
 
   // WebGL fallback
   if (!checkWebGL()) {
@@ -93,7 +95,7 @@ function AppContent() {
       <div className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: 'var(--color-void)', padding: 32 }}>
         <h1 className="text-display glow-blue" style={{ fontSize: '2rem', marginBottom: 16 }}>
-          ASTROOBSERVATORY
+          ASTRO OBSERVATORY
         </h1>
         <p style={{ color: 'var(--color-grey)', textAlign: 'center', maxWidth: 400 }}>
           AstroObservatory requires WebGL support to render 3D scenes.
@@ -135,7 +137,7 @@ function AppContent() {
       {(scene === 'observatory' || scene === 'targeting') && <SearchPanel />}
 
       {/* Coordinate input — observatory only */}
-      {(scene === 'observatory' || scene === 'targeting') && <CoordinateInput />}
+      {scene === 'observatory' && <CoordinateInput />}
 
       {/* Ocular view overlay — targeting state */}
       {scene === 'targeting' && <OcularView />}
@@ -160,8 +162,34 @@ function AppContent() {
           zIndex: 30,
         }}>
           <p className="text-label" style={{ color: 'rgba(79,172,254,0.3)', fontSize: '0.55rem' }}>
-            ASTROOBSERVATORY v1.0 · NASA DATA
+            ASTRO OBSERVATORY v1.0 · NASA DATA
           </p>
+        </div>
+      )}
+
+      {/* Auto-Rotate Toggle (bottom-right) */}
+      {scene === 'viewing' && (
+        <div style={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          zIndex: 30,
+        }}>
+          <button
+            onClick={toggleAutoRotate}
+            className="text-label"
+            style={{ 
+              background: 'rgba(0, 0, 0, 0.5)',
+              border: '1px solid rgba(79,172,254,0.3)',
+              padding: '6px 12px',
+              color: isAutoRotating ? 'var(--color-blue)' : 'var(--color-grey)', 
+              cursor: 'pointer',
+              borderRadius: '2px',
+              transition: 'all 0.2s'
+            }}
+          >
+            ROTATION: {isAutoRotating ? 'ON' : 'OFF'}
+          </button>
         </div>
       )}
 

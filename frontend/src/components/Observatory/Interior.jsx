@@ -16,9 +16,9 @@ export default function Interior() {
       <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[7.8, 64]} />
         <meshStandardMaterial
-          color="#0A1820"
+          color="#1A2830"
           roughness={0.8}
-          metalness={0.1}
+          metalness={0.0}
         />
       </mesh>
 
@@ -45,9 +45,9 @@ export default function Interior() {
       <mesh position={[0, 4, 0]}>
         <cylinderGeometry args={[8, 8, 8, 64, 1, true]} />
         <meshStandardMaterial
-          color="#0D1E2E"
-          roughness={0.7}
-          metalness={0.2}
+          color="#1D2E3E"
+          roughness={0.8}
+          metalness={0.0}
           side={THREE.BackSide}
         />
       </mesh>
@@ -113,33 +113,42 @@ export default function Interior() {
       </mesh>
 
       {/* Lighting ──────────────────────────────────────────────── */}
-      {/* Ambient blue fill */}
-      <ambientLight color="#1A3A5A" intensity={0.6} />
+      {/* Base ambient lighting */}
+      <ambientLight color="#ffffff" intensity={2.0} />
 
-      {/* Spotlight on telescope */}
+      {/* Large area light to simulate bouncing light */}
+      <pointLight position={[0, 5, 0]} color="#ffffff" intensity={4} distance={15} decay={2} />
+
+      {/* Spotlight directly down on telescope */}
       <spotLight
         position={[0, 7, 0]}
         target-position={[0, 0, 0]}
-        angle={0.4}
-        penumbra={0.6}
-        intensity={2}
-        color="#4FACFE"
+        angle={1.0}
+        penumbra={0.5}
+        intensity={8}
+        color="#ffffff"
         castShadow={false}
       />
 
       {/* Warm accent from console */}
-      <pointLight position={[0, 1.5, -3]} color="#4FACFE" intensity={0.3} distance={5} />
+      <pointLight position={[0, 1.5, -3]} color="#FFB347" intensity={2.0} distance={6} decay={2} />
 
-      {/* Subtle rim lights on walls */}
+      {/* Visible wall lights */}
       {[0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].map((angle, i) => (
-        <pointLight
-          key={i}
-          position={[Math.cos(angle) * 6, 1, Math.sin(angle) * 6]}
-          color="#1A3A5A"
-          intensity={0.2}
-          distance={8}
-        />
+        <group key={`light-${i}`} position={[Math.cos(angle) * 7.5, 4.5, Math.sin(angle) * 7.5]} rotation={[0, -angle, 0]}>
+          <mesh>
+            <boxGeometry args={[0.5, 0.1, 0.1]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <pointLight color="#ffffff" intensity={1.5} distance={10} decay={2} />
+        </group>
       ))}
+
+      {/* Exterior Mountain / Hill */}
+      <mesh position={[0, -120, 0]}>
+        <sphereGeometry args={[120, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#0A0C10" roughness={1.0} metalness={0.0} />
+      </mesh>
     </group>
   )
 }

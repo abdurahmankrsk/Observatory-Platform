@@ -3,7 +3,7 @@
  * Particle star background (Three.js Canvas) + logo + ENTER button.
  * Anime.js entrance animation on mount.
  */
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
 import anime from 'animejs'
@@ -24,6 +24,9 @@ export default function StartScreen() {
   const subtitleRef = useRef()
   const btnRef = useRef()
   const lineRef = useRef()
+  
+  const [langOpen, setLangOpen] = useState(false)
+  const [lang, setLang] = useState('en')
 
   const enterObservatory = useObservatoryStore((s) => s.enterObservatory)
 
@@ -124,7 +127,7 @@ export default function StartScreen() {
             opacity: 0,
           }}
         >
-          ASTRO<span style={{ color: 'var(--color-blue)' }}>OBSERVATORY</span>
+          ASTRO <span style={{ color: 'var(--color-blue)' }}>OBSERVATORY</span>
         </h1>
 
         {/* Divider */}
@@ -148,19 +151,77 @@ export default function StartScreen() {
           <br />powered by real NASA data
         </p>
 
-        {/* ENTER button */}
-        <button
-          ref={btnRef}
-          id="enter-observatory-btn"
-          className="btn-primary"
-          style={{ fontSize: '0.875rem', opacity: 0, padding: '14px 40px' }}
-          onClick={handleEnter}
-        >
-          <span>ENTER OBSERVATORY</span>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
+        {/* Actions Container */}
+        <div ref={btnRef} style={{ opacity: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          {/* ENTER button */}
+          <button
+            id="enter-observatory-btn"
+            className="btn-primary"
+            style={{ fontSize: '0.875rem', padding: '14px 40px' }}
+            onClick={handleEnter}
+          >
+            <span>ENTER OBSERVATORY</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          {/* Language selector (Custom) */}
+          <div className="relative" style={{ width: '140px' }}>
+            <button
+              onClick={() => setLangOpen(!langOpen)}
+              className="text-mono flex items-center justify-between w-full"
+              style={{
+                background: 'rgba(0, 0, 0, 0.5)',
+                color: 'var(--color-grey)',
+                border: '1px solid rgba(79, 172, 254, 0.3)',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                cursor: 'pointer'
+              }}
+            >
+              <div className="flex items-center gap-2">
+                {lang === 'en' ? (
+                  <img src="https://flagcdn.com/gb.svg" width="16" alt="UK" style={{ borderRadius: '1px' }} />
+                ) : (
+                  <img src="https://flagcdn.com/ba.svg" width="16" alt="Bosnia" style={{ borderRadius: '1px' }} />
+                )}
+                <span>{lang === 'en' ? 'English' : 'Bosnian'}</span>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" strokeWidth="2" strokeLinecap="round"/></svg>
+            </button>
+            
+            {langOpen && (
+              <div 
+                className="absolute top-full left-0 w-full mt-1 flex flex-col overflow-hidden" 
+                style={{
+                  background: '#0a0a0a',
+                  border: '1px solid rgba(79, 172, 254, 0.3)',
+                  borderRadius: '4px',
+                  zIndex: 10
+                }}
+              >
+                <button
+                  onClick={() => { setLang('en'); setLangOpen(false); }}
+                  className="text-mono flex items-center gap-2 w-full text-left hover:bg-white/5"
+                  style={{ padding: '8px 12px', fontSize: '0.75rem', color: 'var(--color-grey)', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
+                >
+                  <img src="https://flagcdn.com/gb.svg" width="16" alt="UK" style={{ borderRadius: '1px' }} />
+                  English
+                </button>
+                <button
+                  onClick={() => { setLang('bs'); setLangOpen(false); }}
+                  className="text-mono flex items-center gap-2 w-full text-left hover:bg-white/5"
+                  style={{ borderTop: '1px solid rgba(79, 172, 254, 0.1)', padding: '8px 12px', fontSize: '0.75rem', color: 'var(--color-grey)', background: 'transparent', borderBottom: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
+                >
+                  <img src="https://flagcdn.com/ba.svg" width="16" alt="Bosnia" style={{ borderRadius: '1px' }} />
+                  Bosnian
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Bottom coordinates decoration */}
         <p

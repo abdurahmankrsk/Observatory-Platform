@@ -33,6 +33,7 @@ const useObservatoryStore = create((set, get) => ({
   // ── Telescope state ──────────────────────────────────────────────────────
   telescopeRA: 0,
   telescopeDec: 0,
+  isAutoRotating: true,
 
   // ── Actions ──────────────────────────────────────────────────────────────
   setScene: (scene) => set({ scene }),
@@ -78,6 +79,7 @@ const useObservatoryStore = create((set, get) => ({
 
   setInfoPanelOpen: (open) => set({ isInfoPanelOpen: open }),
   setTelescopePointing: (ra, dec) => set({ telescopeRA: ra, telescopeDec: dec }),
+  toggleAutoRotate: () => set((state) => ({ isAutoRotating: !state.isAutoRotating })),
 }))
 
 export default useObservatoryStore

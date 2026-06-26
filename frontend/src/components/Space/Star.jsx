@@ -89,17 +89,20 @@ void main() {
   float convection = (n1 + n2 + n3) * 0.5 + 0.5;
 
   // Hot spots (bright inner convection)
-  float hotSpot = pow(convection, 2.5);
+  float hotSpot = pow(max(convection, 0.0001), 2.5);
 
-  vec3 surface = mix(uSurfaceColor * 0.7, uSurfaceColor, convection);
+  vec3 surface = mix(uSurfaceColor * 0.7, uSurfaceColor, clamp(convection, 0.0, 1.0));
   surface = mix(surface, uHotColor, hotSpot * 0.4);
 
+  // Absolute dot product to prevent negative values at extreme angles causing black pixels
+  float nDotV = abs(dot(vNormal, vViewDir));
+
   // Limb darkening (classic stellar limb effect)
-  float limbDark = pow(max(dot(vNormal, vViewDir), 0.0), 0.3);
+  float limbDark = pow(max(nDotV, 0.0001), 0.3);
   surface *= mix(0.5, 1.0, limbDark);
 
   // Fresnel corona glow at edges
-  float fresnel = 1.0 - max(dot(vNormal, vViewDir), 0.0);
+  float fresnel = 1.0 - max(nDotV, 0.0);
   fresnel = pow(fresnel, 2.0);
   vec3 corona = uHotColor * fresnel * 0.6;
 
@@ -162,17 +165,18 @@ export default function Star({ params, position = [0, 0, 0] }) {
   return (
     <group position={position}>
       {/* Star surface */}
-      <mesh ref={meshRef}>
+      <mesh ref={meshRef} frustumCulled={false}>
         <sphereGeometry args={[radius, 64, 64]} />
         <shaderMaterial
           vertexShader={starVertexShader}
           fragmentShader={starFragmentShader}
           uniforms={uniforms}
+          side={THREE.DoubleSide}
         />
       </mesh>
 
       {/* Corona particle system */}
-      <points ref={coronaRef} geometry={coronaGeometry}>
+      <points ref={coronaRef} geometry={coronaGeometry} frustumCulled={false}>
         <pointsMaterial
           color={params?.glowColor ?? new THREE.Color(1, 0.9, 0.6)}
           size={0.03}

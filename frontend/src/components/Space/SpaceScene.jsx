@@ -242,6 +242,7 @@ function FlightCamera() {
 export default function SpaceScene() {
   const scene = useObservatoryStore((s) => s.scene)
   const selectedObject = useObservatoryStore((s) => s.selectedObject)
+  const isAutoRotating = useObservatoryStore((s) => s.isAutoRotating)
   const isFlying = scene === 'flying'
   const isViewing = scene === 'viewing'
 
@@ -276,9 +277,9 @@ export default function SpaceScene() {
           <OrbitControls
             enableZoom={true}
             enablePan={false}
-            minDistance={computeSceneRadius(selectedObject) * 1.2}
+            minDistance={computeSceneRadius(selectedObject) * 2.0}
             maxDistance={computeSceneRadius(selectedObject) * 8}
-            autoRotate={true}
+            autoRotate={isAutoRotating}
             autoRotateSpeed={0.3}
           />
         )}
@@ -291,7 +292,7 @@ export default function SpaceScene() {
             luminanceSmoothing={0.9}
             blendFunction={BlendFunction.SCREEN}
           />
-          <Noise opacity={0.025} blendFunction={BlendFunction.ADD} />
+          <Noise opacity={0.0175} blendFunction={BlendFunction.ADD} />
           <Vignette eskil={false} offset={0.1} darkness={isViewing ? 0.5 : 0.8} />
         </EffectComposer>
       </Canvas>
