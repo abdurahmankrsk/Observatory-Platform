@@ -303,6 +303,68 @@ export default function Interior() {
         )
       })}
 
+      {/* ── Exterior wall detailing ──────────────────────────────────────
+          The outside of the shell is what the visitor sees during the entry
+          fly-in, so it gets buttresses, banding, a plinth and lit windows.
+          The door opening sits at +Z; elements there are skipped. */}
+
+      {/* Buttress ribs with capital + base blocks (skip the door at +Z) */}
+      {Array.from({ length: 12 }).map((_, i) => {
+        const angle = (i / 12) * Math.PI * 2
+        if (Math.abs(Math.sin(angle) - 1) < 0.02) return null // door is at +Z
+        const x = Math.cos(angle), z = Math.sin(angle)
+        return (
+          <group key={`butt-${i}`} position={[x * 8.55, 0, z * 8.55]} rotation={[0, -angle, 0]}>
+            <mesh position={[0, 4.4, 0]} castShadow>
+              <boxGeometry args={[0.34, 8.3, 0.28]} />
+              <meshStandardMaterial color="#16262F" metalness={0.55} roughness={0.5} />
+            </mesh>
+            <mesh position={[0, 8.45, 0]}>
+              <boxGeometry args={[0.52, 0.34, 0.44]} />
+              <meshStandardMaterial color="#243A4E" metalness={0.7} roughness={0.3} />
+            </mesh>
+            <mesh position={[0, 0.45, 0]}>
+              <boxGeometry args={[0.54, 0.6, 0.46]} />
+              <meshStandardMaterial color="#243A4E" metalness={0.7} roughness={0.3} />
+            </mesh>
+          </group>
+        )
+      })}
+
+      {/* Exterior horizontal accent bands (gapped at the door) */}
+      {[2.4, 5.6].map((y, i) => (
+        <mesh key={`xband-${i}`} position={[0, y, 0]}>
+          <cylinderGeometry args={[8.58, 8.58, 0.2, 64, 1, true, GAP_ANGLE, Math.PI * 2 - GAP_ANGLE * 2]} />
+          <meshStandardMaterial color="#243548" metalness={0.7} roughness={0.3} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+
+      {/* Base plinth — a wider skirt at ground level */}
+      <mesh position={[0, 0.55, 0]}>
+        <cylinderGeometry args={[8.78, 8.95, 1.1, 64, 1, true, GAP_ANGLE, Math.PI * 2 - GAP_ANGLE * 2]} />
+        <meshStandardMaterial color="#0F1B24" metalness={0.4} roughness={0.6} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Lit windows around the upper wall (offset so none sits on the door) */}
+      {Array.from({ length: 12 }).map((_, i) => {
+        const angle = (i / 12) * Math.PI * 2 + Math.PI / 12
+        const x = Math.cos(angle), z = Math.sin(angle)
+        return (
+          <group key={`win-${i}`} position={[x * 8.6, 6.1, z * 8.6]} rotation={[0, Math.PI / 2 - angle, 0]}>
+            {/* frame */}
+            <mesh position={[0, 0, -0.04]}>
+              <boxGeometry args={[0.62, 1.0, 0.08]} />
+              <meshStandardMaterial color="#1A2C3C" metalness={0.6} roughness={0.4} />
+            </mesh>
+            {/* pane */}
+            <mesh>
+              <planeGeometry args={[0.46, 0.84]} />
+              <meshBasicMaterial color="#6FB4FF" transparent opacity={0.55} side={THREE.DoubleSide} />
+            </mesh>
+          </group>
+        )
+      })}
+
       {/* ── Dome ───────────────────────────────────────────────────────── */}
       <group position={[0, 8, 0]}>
         <Dome radius={8} />

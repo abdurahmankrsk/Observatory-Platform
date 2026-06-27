@@ -86,18 +86,10 @@ function EntryCamera() {
       currentOrbitAngle.current = targetRotY
       currentDecPitch.current = targetPitch
 
-      // Bias entry x toward the side the observer will settle on,
-      // clamped to ±0.5 so the camera stays safely away from the door panels.
-      // This ensures the straight-line path to the observer clears the telescope mount.
-      const entryX = Math.max(-0.5, Math.min(0.5, target.cX * 0.4))
-
       camera.position.set(0, 4, 35)
-      camera.lookAt(entryX * 0.3, 2.5, 8)
+      camera.lookAt(0, 3, 8)
 
-      const proxy = {
-        x: 0, y: 4, z: 35,
-        lx: entryX * 0.3, ly: 2.5, lz: 8,
-      }
+      const proxy = { x: 0, y: 4, z: 35, lx: 0, ly: 3, lz: 8 }
 
       const tl = gsap.timeline({
         onComplete: () => {
@@ -106,48 +98,43 @@ function EntryCamera() {
       })
       tlRef.current = tl
 
-      // Phase 1 — approach and pass completely through the door (door opens at 0.5s via Door component)
-      // lookAt transitions from the door face to inside the room — camera is NEVER looking backward
-      tl.to(proxy, {
-        x: entryX, y: 3.2, z: 4,
-        lx: 0, ly: 4.5, lz: 0,
-        duration: 2.5,
-        ease: 'power1.inOut',
-        onUpdate: () => {
-          camera.position.set(proxy.x, proxy.y, proxy.z)
-          camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
-          currentLookAt.current.set(proxy.lx, proxy.ly, proxy.lz)
-        },
-      })
-      
-      // Phase 2 — steer clear of the telescope mount (radius ~1.9) if the target is behind it
-      if (target.cZ < 2.5) {
-        const side = target.cX >= 0 ? 1 : -1
-        tl.to(proxy, {
-          x: side * 4.6, y: 3.6, z: 2.0,
-          lx: target.lX * 0.5, ly: (4.5 + target.lY) / 2, lz: target.lZ * 0.5,
-          duration: 1.2,
-          ease: 'power1.inOut',
-          onUpdate: () => {
-            camera.position.set(proxy.x, proxy.y, proxy.z)
-            camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
-            currentLookAt.current.set(proxy.lx, proxy.ly, proxy.lz)
-          },
-        })
+      const apply = () => {
+        camera.position.set(proxy.x, proxy.y, proxy.z)
+        camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
+        currentLookAt.current.set(proxy.lx, proxy.ly, proxy.lz)
       }
 
-      // Phase 3 — glide directly to the telescope observer position
-      // starts already looking at [0, 4.5, 0] (room center), transitions to telescope barrel
+      // The telescope is centre-mounted with its tube tilted toward the door (+Z),
+      // so a straight run to the eyepiece grazes the tube. Instead we stop in
+      // front of the telescope, slide to the observer's side, then settle down —
+      // the path stays in front of and beside the tube and never enters it.
+
+      // Phase 1 — glide through the door and stop in front of the telescope.
+      tl.to(proxy, {
+        x: 0, y: 3.5, z: 6.4,
+        lx: 0, ly: 4.4, lz: 0,
+        duration: 2.4,
+        ease: 'power1.inOut',
+        onUpdate: apply,
+      })
+
+      // Phase 2 — slide across to the observer's side of the barrel (staying in
+      // front of the tube) while tilting up to face along it.
+      tl.to(proxy, {
+        x: target.cX, y: target.cY + 2.3, z: Math.max(target.cZ, 5.2) + 0.5,
+        lx: target.lX * 0.5, ly: (4.4 + target.lY) / 2, lz: target.lZ * 0.5,
+        duration: 1.4,
+        ease: 'power1.inOut',
+        onUpdate: apply,
+      })
+
+      // Phase 3 — settle straight down onto the eyepiece, looking up the barrel.
       tl.to(proxy, {
         x: target.cX, y: target.cY, z: target.cZ,
         lx: target.lX, ly: target.lY, lz: target.lZ,
-        duration: target.cZ < 2.5 ? 1.4 : 2.2,
-        ease: target.cZ < 2.5 ? 'power1.out' : 'power1.inOut',
-        onUpdate: () => {
-          camera.position.set(proxy.x, proxy.y, proxy.z)
-          camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
-          currentLookAt.current.set(proxy.lx, proxy.ly, proxy.lz)
-        },
+        duration: 1.6,
+        ease: 'power2.out',
+        onUpdate: apply,
       })
     } else if (scene === 'observatory' || scene === 'targeting') {
       const cameFromSpace = prevScene.current === 'viewing' || prevScene.current === 'flying'
