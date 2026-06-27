@@ -70,12 +70,15 @@ function EntryCamera() {
       const cY = Math.max(0.5, eY - 1.5 * fY) + rightOffset * rY // Prevent clipping below the floor
       const cZ = eZ - 1.5 * fZ + rightOffset * rZ
 
-      // Point the camera at a distant point along the telescope's axis 
-      // so the barrel visually converges on the exact center of the screen.
-      // Always look at the distant point along the barrel, even if no object is selected.
-      const lookX = lX + 100 * fX
-      const lookY = lY + 100 * fY
-      const lookZ = lZ + 100 * fZ
+      // Point the camera at a distant point along the telescope's axis. Because
+      // the observer stands offset to the RIGHT of the barrel, bias the gaze a
+      // little to the LEFT (toward -right) so the dome slit — which is centred on
+      // the barrel azimuth — sits in the middle of the view and the observer is
+      // looking through the opening rather than at the dome beside it.
+      const lookBias = 11
+      const lookX = lX + 100 * fX - lookBias * rX
+      const lookY = lY + 100 * fY - lookBias * rY
+      const lookZ = lZ + 100 * fZ - lookBias * rZ
 
       return { cX, cY, cZ, lX: lookX, lY: lookY, lZ: lookZ, fX, fY, fZ }
     }

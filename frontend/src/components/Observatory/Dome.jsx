@@ -2,14 +2,20 @@
  * Dome — Procedural observatory dome.
  *
  * The shell is a TRUE hemisphere of `radius` (matching the wall radius) with a
- * meridian slit cut out by leaving angular gaps in the sphere geometry. The old
- * version faked the slit by translating two hemispheres ±2.4 apart, which made
- * the dome bulge ~2.4 units past the walls (the "mushroom" look). Cutting the
- * slit angularly keeps the dome inside the walls.
+ * single meridian slit. The old version faked the slit by translating two
+ * hemispheres ±2.4 apart, which made the dome bulge ~2.4 units past the walls
+ * (the "mushroom" look). Cutting the slit angularly keeps the dome inside the
+ * walls.
  *
- * The ENTIRE dome — shell, ribs, latitude rings AND the base rim — lives inside
- * the single rotating `domeRef` group, so every ring tracks the telescope when
- * an object is selected (previously the base rim sat outside and never moved).
+ * The slit is ONE continuous strip running from one base, over the top, to the
+ * opposite base. A naive phi-gap pinches shut at the pole (it reads as two
+ * separate slits), so the shell stops just short of the zenith (`thetaTop`),
+ * leaving the very top open — the two halves of the strip join through that
+ * opening into a single slot.
+ *
+ * The ENTIRE dome — shell, rings, rails AND the base rim — lives inside the
+ * single rotating `domeRef` group, so every part tracks the telescope when an
+ * object is selected (previously the base rim sat outside and never moved).
  */
 import React, { useMemo, useEffect, useRef } from 'react'
 import * as THREE from 'three'
@@ -32,32 +38,35 @@ export default function Dome({ radius = 8 }) {
     gsap.to(domeRef.current.rotation, { y: currentY + diff, duration: 2, ease: 'power2.inOut' })
   }, [telescopeRA, scene])
 
-  // Half angular width of the slit (rad). Centred on the Z axis so the strip
-  // runs from one base, over the zenith, to the opposite base.
-  const slitHalf = 0.26
+  const slitHalf = 0.26          // half angular width of the slit (rad)
+  const thetaTop = 0.14          // shell stops this far short of the pole → open top
 
-  // Two shell pieces leaving the slit open at +Z and -Z. No translation → the
-  // dome stays a clean hemisphere of `radius` and never overhangs the walls.
+  // Two shell pieces leaving the slit open at +Z and -Z, stopping short of the
+  // pole so the strip stays open over the top (one continuous slot, not two).
   const shellA = useMemo(() =>
-    new THREE.SphereGeometry(radius, 64, 40,
-      Math.PI / 2 + slitHalf, Math.PI - 2 * slitHalf, 0, Math.PI / 2), [radius])
+    new THREE.SphereGeometry(radius, 72, 40,
+      Math.PI / 2 + slitHalf, Math.PI - 2 * slitHalf, thetaTop, Math.PI / 2 - thetaTop), [radius])
   const shellB = useMemo(() =>
-    new THREE.SphereGeometry(radius, 64, 40,
-      3 * Math.PI / 2 + slitHalf, Math.PI - 2 * slitHalf, 0, Math.PI / 2), [radius])
+    new THREE.SphereGeometry(radius, 72, 40,
+      3 * Math.PI / 2 + slitHalf, Math.PI - 2 * slitHalf, thetaTop, Math.PI / 2 - thetaTop), [radius])
 
   // Horizontal latitude rings (decorative structural bands).
   const latRings = useMemo(() =>
-    [0.16, 0.42, 0.68].map((t) => {
+    [0.18, 0.46].map((t) => {
       const phi = t * Math.PI / 2
       return { r: radius * Math.cos(phi), y: radius * Math.sin(phi) }
     }), [radius])
 
-  // Meridian ribs framing the two slit edges — half-tori (arc = π) swung about
-  // Y so they sweep from base, over the zenith, to the opposite base.
-  const ribGeo = useMemo(() =>
-    new THREE.TorusGeometry(radius - 0.015, 0.07, 8, 60, Math.PI), [radius])
-  const glowRibGeo = useMemo(() =>
-    new THREE.TorusGeometry(radius - 0.06, 0.025, 6, 60, Math.PI), [radius])
+  // Slit edge rails — half-tori (arc = π) swung about Y so each one traces a
+  // full edge of the strip from base, over the open top, to the opposite base.
+  const railGeo = useMemo(() =>
+    new THREE.TorusGeometry(radius - 0.015, 0.07, 8, 64, Math.PI), [radius])
+  const glowGeo = useMemo(() =>
+    new THREE.TorusGeometry(radius - 0.05, 0.022, 6, 64, Math.PI), [radius])
+
+  // Ring framing the open top of the slit.
+  const capR = radius * Math.sin(thetaTop)
+  const capY = radius * Math.cos(thetaTop)
 
   return (
     <group rotation={[0, Math.PI, 0]}>
@@ -82,42 +91,35 @@ export default function Dome({ radius = 8 }) {
           </mesh>
         ))}
 
-        {/* ── Vertical structural ribs spread around the closed part of the shell ── */}
-        {[0.6, 1.05, 1.5, 1.95, 2.4, -0.6, -1.05, -1.5, -1.95, -2.4].map((a, i) => (
-          <mesh key={`rib-${i}`} geometry={ribGeo} rotation={[0, Math.PI / 2 + a, 0]}>
-            <meshStandardMaterial color="#26405A" metalness={0.75} roughness={0.28} />
-          </mesh>
-        ))}
-
-        {/* ── Slit edge rails (heavier) + emissive inner glow ── */}
+        {/* ── Slit edge rails + emissive inner glow (frame the single strip) ── */}
         {[slitHalf, -slitHalf].map((off, i) => (
           <group key={`rail-${i}`}>
-            <mesh geometry={ribGeo} rotation={[0, Math.PI / 2 + off * 1.0, 0]} scale={[1, 1, 1]}>
+            <mesh geometry={railGeo} rotation={[0, Math.PI / 2 + off, 0]}>
               <meshStandardMaterial color="#3A5A7A" metalness={0.88} roughness={0.16} />
             </mesh>
-            <mesh geometry={glowRibGeo} rotation={[0, Math.PI / 2 + off * 0.78, 0]}>
+            <mesh geometry={glowGeo} rotation={[0, Math.PI / 2 + off, 0]}>
               <meshBasicMaterial color="#5599CC" transparent opacity={0.5} />
             </mesh>
           </group>
         ))}
 
-        {/* Slit edge light pools */}
+        {/* ── Ring framing the open top of the slit ── */}
+        <mesh position={[0, capY, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[capR, 0.06, 8, 40]} />
+          <meshStandardMaterial color="#3A5A7A" metalness={0.85} roughness={0.18} />
+        </mesh>
+
+        {/* Slit light pools */}
         <pointLight position={[0, radius * 0.55, radius * 0.45]} color="#4488BB" intensity={0.9} distance={6} decay={2} />
         <pointLight position={[0, radius * 0.55, -radius * 0.45]} color="#4488BB" intensity={0.7} distance={6} decay={2} />
 
-        {/* ── Base rim ring (now rotates WITH the dome) ── */}
+        {/* ── Base rim ring (rotates WITH the dome) ── */}
         <mesh position={[0, 0.04, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[radius - 0.06, 0.20, 10, 72]} />
           <meshStandardMaterial color="#2A4060" metalness={0.85} roughness={0.18} />
         </mesh>
         <mesh position={[0, -0.12, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[radius - 0.18, 0.07, 8, 72]} />
-          <meshStandardMaterial color="#4A6A8A" metalness={0.9} roughness={0.12} />
-        </mesh>
-
-        {/* ── Zenith cap disc ── */}
-        <mesh position={[0, radius - 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[0.4, 24]} />
           <meshStandardMaterial color="#4A6A8A" metalness={0.9} roughness={0.12} />
         </mesh>
       </group>
