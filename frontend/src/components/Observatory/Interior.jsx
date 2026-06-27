@@ -67,18 +67,18 @@ function Door() {
           <boxGeometry args={[DOOR_HALF + 0.12, DOOR_H, 0.10]} />
           <meshStandardMaterial color="#0D1C2C" metalness={0.55} roughness={0.48} />
         </mesh>
-        {/* Upper window pane */}
-        <mesh position={[DOOR_HALF / 2, DOOR_H * 0.18, 0.062]}>
+        {/* Upper window pane — in front of the body (body sits at z+0.07) */}
+        <mesh position={[DOOR_HALF / 2, DOOR_H * 0.18, 0.132]}>
           <planeGeometry args={[DOOR_HALF * 0.62, DOOR_H * 0.36]} />
           <meshBasicMaterial color="#4FACFE" transparent opacity={0.14} />
         </mesh>
         {/* Handle */}
-        <mesh position={[DOOR_HALF * 0.84, 0, 0.08]} rotation={[Math.PI / 2, 0, 0]}>
+        <mesh position={[DOOR_HALF * 0.84, 0, 0.15]} rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.04, 0.035, 0.20, 10]} />
           <meshStandardMaterial color="#8AAFCC" metalness={0.95} roughness={0.08} />
         </mesh>
         {/* Raised panel inset */}
-        <mesh position={[DOOR_HALF / 2, -DOOR_H * 0.20, 0.058]}>
+        <mesh position={[DOOR_HALF / 2, -DOOR_H * 0.20, 0.128]}>
           <boxGeometry args={[DOOR_HALF * 0.72, DOOR_H * 0.30, 0.03]} />
           <meshStandardMaterial color="#0A1828" metalness={0.4} roughness={0.6} />
         </mesh>
@@ -273,9 +273,11 @@ export default function Interior() {
         <meshStandardMaterial color="#243548" metalness={0.6} roughness={0.35} side={THREE.BackSide} />
       </mesh>
 
-      {/* Vertical pilasters */}
+      {/* Vertical pilasters (skip the one at the doorway, +Z, so it doesn't
+          stand as a pole in the middle of the doors the camera flies through) */}
       {Array.from({ length: 12 }).map((_, i) => {
         const angle = (i / 12) * Math.PI * 2
+        if (Math.abs(Math.sin(angle) - 1) < 0.01) return null // door is at +Z
         return (
           <mesh
             key={i}
@@ -345,19 +347,21 @@ export default function Interior() {
         <meshStandardMaterial color="#0F1B24" metalness={0.4} roughness={0.6} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Lit windows around the upper wall (offset so none sits on the door) */}
+      {/* Lit windows — set between the two accent bands (y 2.4 & 5.6) and offset
+          so none sits on the door. The pane is pushed clearly in front of the
+          frame, and the frame clear of the wall, to avoid z-fighting. */}
       {Array.from({ length: 12 }).map((_, i) => {
         const angle = (i / 12) * Math.PI * 2 + Math.PI / 12
         const x = Math.cos(angle), z = Math.sin(angle)
         return (
-          <group key={`win-${i}`} position={[x * 8.6, 6.1, z * 8.6]} rotation={[0, Math.PI / 2 - angle, 0]}>
-            {/* frame */}
-            <mesh position={[0, 0, -0.04]}>
-              <boxGeometry args={[0.62, 1.0, 0.08]} />
+          <group key={`win-${i}`} position={[x * 8.58, 4.0, z * 8.58]} rotation={[0, Math.PI / 2 - angle, 0]}>
+            {/* frame (dark border, just in front of the wall) */}
+            <mesh position={[0, 0, 0]}>
+              <boxGeometry args={[0.62, 1.0, 0.07]} />
               <meshStandardMaterial color="#1A2C3C" metalness={0.6} roughness={0.4} />
             </mesh>
-            {/* pane */}
-            <mesh>
+            {/* pane (lit glass, clearly proud of the frame) */}
+            <mesh position={[0, 0, 0.08]}>
               <planeGeometry args={[0.46, 0.84]} />
               <meshBasicMaterial color="#6FB4FF" transparent opacity={0.55} side={THREE.DoubleSide} />
             </mesh>

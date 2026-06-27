@@ -13,6 +13,14 @@ import gsap from 'gsap'
 import useObservatoryStore from '../../store/observatoryStore'
 import Interior from './Interior'
 
+// TEMP DEBUG (remove before ship)
+if (typeof window !== 'undefined') window.__STORE = useObservatoryStore
+function SceneGrab() {
+  const { scene } = useThree()
+  useEffect(() => { window.__SCENE = scene }, [scene])
+  return null
+}
+
 function EntryCamera() {
   const { camera } = useThree()
   const scene = useObservatoryStore((s) => s.scene)
