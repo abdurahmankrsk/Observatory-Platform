@@ -5,8 +5,9 @@
  */
 import React, { useEffect, Suspense, useRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette, Noise, ChromaticAberration } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
+import { Vector2, Vector3 } from 'three'
 import gsap from 'gsap'
 
 import useObservatoryStore from '../../store/observatoryStore'
@@ -21,7 +22,10 @@ function EntryCamera() {
   const arrivedAtObservatory = useObservatoryStore((s) => s.arrivedAtObservatory)
 
   const prevScene = useRef(scene)
-  const tlRef = useRef()
+  const tlRef = useRef(null)
+  
+  // Track the actual camera lookAt to smoothly interpolate it when the target jumps (e.g., picking first object)
+  const currentLookAt = useRef(new Vector3(0, 4.5, 0))
   const currentOrbitAngle = useRef((telescopeRA / 360) * Math.PI * 2)
   const targetRotXInit = -(telescopeDec * Math.PI) / 180 * 0.8
   const currentDecPitch = useRef(targetRotXInit + Math.PI / 4)
@@ -68,10 +72,10 @@ function EntryCamera() {
 
       // Point the camera at a distant point along the telescope's axis 
       // so the barrel visually converges on the exact center of the screen.
-      // IF an object is selected. If not, look at the telescope itself!
-      const lookX = selectedObject ? lX + 100 * fX : 0
-      const lookY = selectedObject ? lY + 100 * fY : 5
-      const lookZ = selectedObject ? lZ + 100 * fZ : 0
+      // Always look at the distant point along the barrel, even if no object is selected.
+      const lookX = lX + 100 * fX
+      const lookY = lY + 100 * fY
+      const lookZ = lZ + 100 * fZ
 
       return { cX, cY, cZ, lX: lookX, lY: lookY, lZ: lookZ, fX, fY, fZ }
     }
@@ -82,13 +86,17 @@ function EntryCamera() {
       currentOrbitAngle.current = targetRotY
       currentDecPitch.current = targetPitch
 
-      // Start outside
-      camera.position.set(0, 5, 35)
-      camera.lookAt(0, 3, 0)
+      // Bias entry x toward the side the observer will settle on,
+      // clamped to ±0.5 so the camera stays safely away from the door panels.
+      // This ensures the straight-line path to the observer clears the telescope mount.
+      const entryX = Math.max(-0.5, Math.min(0.5, target.cX * 0.4))
+
+      camera.position.set(0, 4, 35)
+      camera.lookAt(entryX * 0.3, 2.5, 8)
 
       const proxy = {
-        x: 0, y: 5, z: 35,
-        lx: 0, ly: 3, lz: 0,
+        x: 0, y: 4, z: 35,
+        lx: entryX * 0.3, ly: 2.5, lz: 8,
       }
 
       const tl = gsap.timeline({
@@ -98,36 +106,47 @@ function EntryCamera() {
       })
       tlRef.current = tl
 
-      // Approach dome exterior
+      // Phase 1 — approach and pass completely through the door (door opens at 0.5s via Door component)
+      // lookAt transitions from the door face to inside the room — camera is NEVER looking backward
       tl.to(proxy, {
-        x: 0, y: 5, z: 18,
-        duration: 1.5,
-        ease: 'power2.in',
-        onUpdate: () => {
-          camera.position.set(proxy.x, proxy.y, proxy.z)
-          camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
-        },
-      })
-      // Fly through entrance
-      .to(proxy, {
-        x: 0, y: 3.5, z: 4,
-        lx: 0, ly: 2, lz: 0,
-        duration: 1.5,
+        x: entryX, y: 3.2, z: 4,
+        lx: 0, ly: 4.5, lz: 0,
+        duration: 2.5,
         ease: 'power1.inOut',
         onUpdate: () => {
           camera.position.set(proxy.x, proxy.y, proxy.z)
           camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
+          currentLookAt.current.set(proxy.lx, proxy.ly, proxy.lz)
         },
       })
-      // Settle inside — viewer position, matching target RA & Dec
-      .to(proxy, {
+      
+      // Phase 2 — steer clear of the telescope mount (radius ~1.9) if the target is behind it
+      if (target.cZ < 2.5) {
+        const side = target.cX >= 0 ? 1 : -1
+        tl.to(proxy, {
+          x: side * 4.6, y: 3.6, z: 2.0,
+          lx: target.lX * 0.5, ly: (4.5 + target.lY) / 2, lz: target.lZ * 0.5,
+          duration: 1.2,
+          ease: 'power1.inOut',
+          onUpdate: () => {
+            camera.position.set(proxy.x, proxy.y, proxy.z)
+            camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
+            currentLookAt.current.set(proxy.lx, proxy.ly, proxy.lz)
+          },
+        })
+      }
+
+      // Phase 3 — glide directly to the telescope observer position
+      // starts already looking at [0, 4.5, 0] (room center), transitions to telescope barrel
+      tl.to(proxy, {
         x: target.cX, y: target.cY, z: target.cZ,
         lx: target.lX, ly: target.lY, lz: target.lZ,
-        duration: 1.2,
-        ease: 'power2.out',
+        duration: target.cZ < 2.5 ? 1.4 : 2.2,
+        ease: target.cZ < 2.5 ? 'power1.out' : 'power1.inOut',
         onUpdate: () => {
           camera.position.set(proxy.x, proxy.y, proxy.z)
           camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
+          currentLookAt.current.set(proxy.lx, proxy.ly, proxy.lz)
         },
       })
     } else if (scene === 'observatory' || scene === 'targeting') {
@@ -175,11 +194,17 @@ function EntryCamera() {
 
         const proxy = { 
           angle: startAngle,
-          pitch: currentDecPitch.current
+          pitch: currentDecPitch.current,
+          lx: currentLookAt.current.x,
+          ly: currentLookAt.current.y,
+          lz: currentLookAt.current.z
         }
         tl.to(proxy, {
           angle: endAngle,
           pitch: targetPitch,
+          lx: target.lX,
+          ly: target.lY,
+          lz: target.lZ,
           duration: 2.0,
           ease: 'power2.inOut',
           onUpdate: () => {
@@ -189,7 +214,9 @@ function EntryCamera() {
             const cur = getCamLook(proxy.pitch, proxy.angle + Math.PI)
             
             camera.position.set(cur.cX, cur.cY, cur.cZ)
-            camera.lookAt(cur.lX, cur.lY, cur.lZ)
+            // Smoothly animate the look target instead of snapping to it instantly
+            camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
+            currentLookAt.current.set(proxy.lx, proxy.ly, proxy.lz)
           }
         })
       }
@@ -206,9 +233,9 @@ export default function ObservatoryScene() {
     <div className="fixed inset-0">
       <Canvas
         gl={{ antialias: true, alpha: false }}
-        camera={{ position: [0, 5, 35], fov: 60, near: 0.01, far: 500 }}
+        camera={{ position: [0, 5, 35], fov: 70, near: 0.01, far: 500 }}
         dpr={Math.min(window.devicePixelRatio, 2)}
-        shadows={false}
+        shadows
       >
         <Suspense fallback={null}>
           <Interior />
@@ -218,13 +245,17 @@ export default function ObservatoryScene() {
 
         <EffectComposer>
           <Bloom
-            intensity={0.6}
-            luminanceThreshold={0.3}
-            luminanceSmoothing={0.9}
+            intensity={0.85}
+            luminanceThreshold={0.28}
+            luminanceSmoothing={0.85}
             blendFunction={BlendFunction.SCREEN}
           />
-          <Noise opacity={0.014} blendFunction={BlendFunction.ADD} />
-          <Vignette eskil={false} offset={0.1} darkness={0.6} />
+          <ChromaticAberration
+            offset={new Vector2(0.0008, 0.0008)}
+            radialModulation={false}
+          />
+          <Noise opacity={0.018} blendFunction={BlendFunction.ADD} />
+          <Vignette eskil={false} offset={0.08} darkness={0.72} />
         </EffectComposer>
       </Canvas>
     </div>

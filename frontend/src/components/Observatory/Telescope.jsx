@@ -1,119 +1,173 @@
 /**
- * Telescope — Procedural telescope model built from lathe geometry.
+ * Telescope — Procedural telescope model built from Three.js primitives.
  * Animates to point at coordinates when targetRA/targetDec changes.
+ * Mount shifted down an additional 0.3 from previous version.
  */
-import React, { useRef, useEffect, useMemo } from 'react'
+import React, { useRef, useEffect } from 'react'
 import gsap from 'gsap'
-import * as THREE from 'three'
 import useObservatoryStore from '../../store/observatoryStore'
 
-function TelescopeTube({ length, radiusTop, radiusBot }) {
+const MAT = {
+  bodyDark:   { color: '#1A2E40', metalness: 0.75, roughness: 0.25 },
+  bodyMid:    { color: '#223344', metalness: 0.80, roughness: 0.20 },
+  bodyLight:  { color: '#2E4560', metalness: 0.85, roughness: 0.18 },
+  chrome:     { color: '#8AAFCC', metalness: 0.95, roughness: 0.10 },
+  darkChrome: { color: '#4A6070', metalness: 0.90, roughness: 0.15 },
+  accent:     { color: '#C0D8E8', metalness: 0.95, roughness: 0.08 },
+  rubberGrip: { color: '#0D1820', metalness: 0.0,  roughness: 0.95 },
+  lensGlass:  { color: '#00AAFF', emissive: '#00AAFF', emissiveIntensity: 1.2, metalness: 0.1, roughness: 0.05, transparent: true, opacity: 0.85 },
+}
+function M({ c }) { return <meshStandardMaterial {...c} /> }
+
+function TubeRing({ y, r = 0.34 }) {
   return (
-    <mesh>
-      <cylinderGeometry args={[radiusTop, radiusBot, length, 32]} />
-      <meshStandardMaterial color="#1C2F40" metalness={0.1} roughness={0.8} />
+    <mesh position={[0, y, 0]}>
+      <torusGeometry args={[r, 0.025, 8, 32]} />
+      <meshStandardMaterial {...MAT.chrome} />
     </mesh>
   )
 }
 
+
 export default function Telescope() {
   const baseRef = useRef()
-  const mountRef = useRef()
   const tubeRef = useRef()
-
-  const telescopeRA = useObservatoryStore((s) => s.telescopeRA)
+  const telescopeRA  = useObservatoryStore((s) => s.telescopeRA)
   const telescopeDec = useObservatoryStore((s) => s.telescopeDec)
-  const scene = useObservatoryStore((s) => s.scene)
+  const scene        = useObservatoryStore((s) => s.scene)
 
-  // Animate telescope rotation when target changes
   useEffect(() => {
     if (!tubeRef.current || !baseRef.current || scene === 'start' || scene === 'entering') return
-
     const targetRotX = -(telescopeDec * Math.PI) / 180 * 0.8
     const targetBase = (telescopeRA / 360) * Math.PI * 2
-    
-    // Calculate shortest path for base rotation
     const currentY = baseRef.current.rotation.y
     let diff = targetBase - currentY
-    while (diff > Math.PI) diff -= Math.PI * 2
+    while (diff >  Math.PI) diff -= Math.PI * 2
     while (diff < -Math.PI) diff += Math.PI * 2
-
-    // Rotate the inner base for RA so it matches the dome
-    gsap.to(baseRef.current.rotation, {
-      y: currentY + diff, // Parent handles Math.PI offset to prevent React Fiber overrides
-      duration: 2,
-      ease: 'power2.inOut',
-    })
-
-    // Tilt only the tube for Dec
-    gsap.to(tubeRef.current.rotation, {
-      x: targetRotX + Math.PI / 4, // base tilt + pointing
-      duration: 2,
-      ease: 'power2.inOut',
-    })
+    gsap.to(baseRef.current.rotation, { y: currentY + diff, duration: 2, ease: 'power2.inOut' })
+    gsap.to(tubeRef.current.rotation, { x: targetRotX + Math.PI / 4, duration: 2, ease: 'power2.inOut' })
   }, [telescopeRA, telescopeDec, scene])
-
-  // Removed idle slow scan animation per user request so the telescope stays pointed at the hole
 
   return (
     <group position={[0, 0, 0]} scale={[2.5, 2.5, 2.5]} rotation={[0, Math.PI, 0]}>
       <group ref={baseRef}>
-      {/* Base mount — heavy cylinder raised to prevent clipping floor */}
-      <mesh position={[0, 1.25, 0]}>
-        <cylinderGeometry args={[0.6, 0.8, 2.5, 16]} />
-        <meshStandardMaterial color="#162230" metalness={0.1} roughness={0.8} />
-      </mesh>
 
-      {/* Equatorial mount ring */}
-      <mesh ref={mountRef} position={[0, 2.5, 0]}>
-        <torusGeometry args={[0.5, 0.12, 8, 32]} />
-        <meshStandardMaterial color="#243548" metalness={0.1} roughness={0.8} />
-      </mesh>
-
-      {/* Telescope tube group — rotates toward sky target */}
-      <group ref={tubeRef} position={[0, 2.5, 0]} rotation={[Math.PI / 4, 0, 0]}>
-        {/* Main tube */}
-        <mesh position={[0, 0, 0]}>
-          <cylinderGeometry args={[0.28, 0.32, 4.8, 24]} />
-          <meshStandardMaterial color="#1A2E40" metalness={0.1} roughness={0.8} />
+        {/* Pier column — shifted down 0.3 from previous: height 1.2, center 0.6 */}
+        <mesh position={[0, 0.6, 0]}>
+          <cylinderGeometry args={[0.45, 0.65, 1.2, 16]} />
+          <M c={MAT.bodyDark} />
+        </mesh>
+        <mesh position={[0, 0.06, 0]}>
+          <cylinderGeometry args={[0.75, 0.75, 0.12, 16]} />
+          <M c={MAT.chrome} />
+        </mesh>
+        <mesh position={[0, 1.2, 0]}>
+          <cylinderGeometry args={[0.55, 0.55, 0.10, 16]} />
+          <M c={MAT.chrome} />
         </mesh>
 
-        {/* Focuser at bottom */}
-        <mesh position={[0, -2.5, 0]}>
-          <cylinderGeometry args={[0.2, 0.28, 0.4, 16]} />
-          <meshStandardMaterial color="#243548" metalness={0.1} roughness={0.8} />
+        {/* Equatorial head — y 1.8→1.5 */}
+        <mesh position={[0, 1.5, 0]}>
+          <cylinderGeometry args={[0.35, 0.38, 0.55, 20]} />
+          <M c={MAT.bodyMid} />
+        </mesh>
+        <mesh position={[0, 1.78, 0]}>
+          <torusGeometry args={[0.37, 0.03, 8, 32]} />
+          <M c={MAT.chrome} />
         </mesh>
 
-        {/* Lens cap at top */}
-        <mesh position={[0, 2.45, 0]}>
-          <cylinderGeometry args={[0.29, 0.29, 0.1, 24]} />
-          <meshStandardMaterial color="#0A1520" metalness={0.1} roughness={0.8} />
+        {/* Fork arms — y 2.4→2.1 */}
+        <mesh position={[-0.42, 2.1, 0]}>
+          <boxGeometry args={[0.16, 0.85, 0.22]} />
+          <M c={MAT.bodyMid} />
+        </mesh>
+        <mesh position={[0.42, 2.1, 0]}>
+          <boxGeometry args={[0.16, 0.85, 0.22]} />
+          <M c={MAT.bodyMid} />
         </mesh>
 
-        {/* Finderscope */}
-        <mesh position={[0.35, 0.3, 0]} rotation={[0, 0, 0.1]}>
-          <cylinderGeometry args={[0.06, 0.07, 1.2, 12]} />
-          <meshStandardMaterial color="#243548" metalness={0.1} roughness={0.8} />
+        {/* Dec axis — y 2.85→2.55 */}
+        <mesh position={[0, 2.55, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.10, 0.10, 1.0, 16]} />
+          <M c={MAT.darkChrome} />
         </mesh>
+        {[-0.5, 0.5].map((x, i) => (
+          <mesh key={i} position={[x, 2.55, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.13, 0.13, 0.05, 16]} />
+            <M c={MAT.chrome} />
+          </mesh>
+        ))}
 
-        {/* Lens glow — tiny emissive blue dot inside tube */}
-        <mesh position={[0, 2.4, 0]}>
-          <circleGeometry args={[0.2, 32]} />
-          <meshBasicMaterial color="#4FACFE" transparent opacity={0.3} />
-        </mesh>
-      </group>
+        {/* Tube group — pivot y 2.85→2.55 */}
+        <group ref={tubeRef} position={[0, 2.55, 0]} rotation={[Math.PI / 4, 0, 0]}>
+          <mesh position={[0, 0, 0]}>
+            <cylinderGeometry args={[0.29, 0.31, 5.0, 32]} />
+            <M c={MAT.bodyMid} />
+          </mesh>
+          <TubeRing y={-2.1} /><TubeRing y={-0.9} /><TubeRing y={0.3} /><TubeRing y={1.5} /><TubeRing y={2.4} />
 
-      {/* Counterweight bar */}
-      <mesh position={[-0.45, 2.3, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.05, 0.05, 0.9, 8]} />
-        <meshStandardMaterial color="#1A2A3A" metalness={0.1} roughness={0.8} />
-      </mesh>
+          {/* Front aperture */}
+          <mesh position={[0, 2.56, 0]}>
+            <torusGeometry args={[0.30, 0.04, 10, 32]} />
+            <M c={MAT.chrome} />
+          </mesh>
+          <mesh position={[0, 2.85, 0]}>
+            <cylinderGeometry args={[0.30, 0.30, 0.55, 32, 1, true]} />
+            <M c={MAT.bodyDark} />
+          </mesh>
+          <mesh position={[0, 3.12, 0]}>
+            <torusGeometry args={[0.30, 0.025, 8, 32]} />
+            <M c={MAT.accent} />
+          </mesh>
+          <mesh position={[0, 2.58, 0]}>
+            <circleGeometry args={[0.26, 48]} />
+            <meshStandardMaterial {...MAT.lensGlass} />
+          </mesh>
+          <pointLight position={[0, 2.55, 0]} color="#00AAFF" intensity={0.8} distance={3} decay={3} />
 
-      {/* Counterweight */}
-      <mesh position={[-0.9, 2.3, 0]}>
-        <sphereGeometry args={[0.18, 12, 12]} />
-        <meshStandardMaterial color="#243040" metalness={0.1} roughness={0.8} />
-      </mesh>
+          {/* Eyepiece end */}
+          <mesh position={[0, -2.55, 0]}>
+            <cylinderGeometry args={[0.22, 0.26, 0.42, 20]} />
+            <M c={MAT.bodyLight} />
+          </mesh>
+          <mesh position={[0, -2.36, 0]}>
+            <torusGeometry args={[0.235, 0.025, 8, 24]} />
+            <M c={MAT.chrome} />
+          </mesh>
+          <mesh position={[0, -2.76, 0]}>
+            <cylinderGeometry args={[0.16, 0.16, 0.36, 16]} />
+            <M c={MAT.rubberGrip} />
+          </mesh>
+          {[-0.28, 0.28].map((x, i) => (
+            <mesh key={i} position={[x, -2.56, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.075, 0.065, 0.12, 12]} />
+              <M c={MAT.chrome} />
+            </mesh>
+          ))}
+          <mesh position={[0, -3.05, 0]}>
+            <cylinderGeometry args={[0.14, 0.16, 0.30, 16]} />
+            <M c={MAT.darkChrome} />
+          </mesh>
+
+          {/* Finderscope */}
+          <mesh position={[0.38, 0.4, 0]} rotation={[0, 0, 0.08]}>
+            <cylinderGeometry args={[0.055, 0.065, 1.4, 12]} />
+            <M c={MAT.bodyLight} />
+          </mesh>
+          <mesh position={[0.405, 1.12, 0]}>
+            <torusGeometry args={[0.056, 0.018, 8, 16]} />
+            <M c={MAT.chrome} />
+          </mesh>
+          {[-0.1, 0.9].map((y, i) => (
+            <mesh key={i} position={[0.33, y, 0]}>
+              <boxGeometry args={[0.14, 0.07, 0.14]} />
+              <M c={MAT.darkChrome} />
+            </mesh>
+          ))}
+        </group>
+
+
+
       </group>
     </group>
   )
