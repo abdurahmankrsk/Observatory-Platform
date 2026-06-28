@@ -92,3 +92,19 @@ export function useSearchMutation() {
     },
   })
 }
+
+// ── Identify by coordinates (imperative, for the coordinate input panel) ────
+
+export function useIdentifyMutation() {
+  return useMutation({
+    mutationFn: async ({ ra, dec, radius = 0.1 }) => {
+      // Longer per-request timeout: a live cone search can outlast the
+      // shared 15s axios default.
+      const { data } = await api.get('/api/identify', {
+        params: { ra, dec, radius },
+        timeout: 25000,
+      })
+      return data
+    },
+  })
+}

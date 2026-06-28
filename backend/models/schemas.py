@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SerializeAsAny
 
 
 class CelestialObject(BaseModel):
@@ -78,7 +78,9 @@ class SearchResponse(BaseModel):
 class IdentifyResponse(BaseModel):
     """Result of a coordinate (cone-search) identification."""
     found: bool
-    object: Optional[CelestialObject] = None
+    # SerializeAsAny preserves subclass fields (star/exoplanet) — without it,
+    # serializing to the CelestialObject base type would strip the rich payload.
+    object: Optional[SerializeAsAny[CelestialObject]] = None
     query_ra: float
     query_dec: float
     radius_deg: float

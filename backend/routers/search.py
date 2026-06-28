@@ -2,16 +2,23 @@
 Search router — /api/search, /api/popular, /api/object/{id}.
 Unified search across SIMBAD, NASA Exoplanet Archive, and NeoWs.
 """
+import math
+
 from fastapi import APIRouter, HTTPException, Query, Depends
 
-from models.schemas import CelestialObject, SearchResponse
+from models.schemas import CelestialObject, SearchResponse, IdentifyResponse
 from services.simbad_service import (
     search_simbad,
+    identify_by_coordinates,
     get_popular_objects,
     KNOWN_OBJECTS,
     SOLAR_SYSTEM,
 )
-from services.nasa_service import fetch_exoplanet_by_name, fetch_near_earth_asteroids
+from services.nasa_service import (
+    fetch_exoplanet_by_name,
+    fetch_exoplanet_by_coordinates,
+    fetch_near_earth_asteroids,
+)
 
 
 router = APIRouter(prefix="/api", tags=["search"])
@@ -20,6 +27,14 @@ router = APIRouter(prefix="/api", tags=["search"])
 def get_api_key() -> str:
     import os
     return os.getenv("NASA_API_KEY", "DEMO_KEY")
+
+
+def _angular_sep(ra1: float, dec1: float, ra2: float, dec2: float) -> float:
+    """Great-circle angular separation between two sky points, in degrees."""
+    r1, d1, r2, d2 = map(math.radians, (ra1, dec1, ra2, dec2))
+    cos_sep = math.sin(d1) * math.sin(d2) + math.cos(d1) * math.cos(d2) * math.cos(r1 - r2)
+    cos_sep = max(-1.0, min(1.0, cos_sep))  # clamp for float error
+    return math.degrees(math.acos(cos_sep))
 
 
 @router.get("/search", response_model=SearchResponse)
@@ -63,6 +78,51 @@ async def popular_objects():
     Return the curated list of popular objects for quick access in the observatory panel.
     """
     return get_popular_objects()
+
+
+@router.get("/identify", response_model=IdentifyResponse)
+async def identify(
+    ra: float = Query(..., ge=0, le=360, description="Right Ascension in degrees"),
+    dec: float = Query(..., ge=-90, le=90, description="Declination in degrees"),
+    radius: float = Query(0.1, gt=0, le=5, description="Cone search radius in degrees"),
+    api_key: str = Depends(get_api_key),
+):
+    """
+    Identify the catalogued object nearest the given sky coordinates.
+
+    1. SIMBAD cone search → closest catalogued object (stars, nebulae, galaxies).
+    2. If it's a star, enrich via the NASA Exoplanet Archive (known host → planet data).
+    Returns found=False when nothing is catalogued within the radius.
+    """
+    obj = await identify_by_coordinates(ra, dec, radius)
+
+    if obj is None:
+        return IdentifyResponse(
+            found=False, object=None, query_ra=ra, query_dec=dec, radius_deg=radius
+        )
+
+    # Optional enrichment: a star here may be a known exoplanet host. Match by
+    # position — SIMBAD names rarely string-match NASA's pl_name.
+    if obj.type == "star":
+        try:
+            exo = await fetch_exoplanet_by_coordinates(ra, dec, api_key=api_key)
+            if exo:
+                obj = exo
+        except Exception:
+            pass  # Enrichment is non-critical
+
+    separation = None
+    if obj.ra is not None and obj.dec is not None:
+        separation = _angular_sep(ra, dec, obj.ra, obj.dec)
+
+    return IdentifyResponse(
+        found=True,
+        object=obj,
+        query_ra=ra,
+        query_dec=dec,
+        radius_deg=radius,
+        separation_deg=separation,
+    )
 
 
 @router.get("/object/{object_id}", response_model=CelestialObject)

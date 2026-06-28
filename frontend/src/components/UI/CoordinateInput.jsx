@@ -5,15 +5,18 @@
 import React, { useEffect, useRef, useState } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
+import { useIdentifyMutation } from '../../hooks/useNASAData'
 
 export default function CoordinateInput() {
   const panelRef = useRef()
   const [ra, setRa] = useState('')
   const [dec, setDec] = useState('')
   const [error, setError] = useState('')
+  const [note, setNote] = useState('')
 
   const setTelescopePointing = useObservatoryStore((s) => s.setTelescopePointing)
   const targetObject = useObservatoryStore((s) => s.targetObject)
+  const identifyMutation = useIdentifyMutation()
 
   useEffect(() => {
     anime({
@@ -26,8 +29,9 @@ export default function CoordinateInput() {
     })
   }, [])
 
-  const handlePoint = () => {
+  const handlePoint = async () => {
     setError('')
+    setNote('')
     const raVal = parseFloat(ra)
     const decVal = parseFloat(dec)
 
@@ -40,7 +44,7 @@ export default function CoordinateInput() {
       return
     }
 
-    // Create a synthetic object for the coordinate point
+    // Synthetic fallback used when nothing is catalogued at this point.
     const coordObj = {
       id: `coord_${raVal}_${decVal}`,
       name: `RA ${raVal.toFixed(2)}° Dec ${decVal.toFixed(2)}°`,
@@ -51,8 +55,23 @@ export default function CoordinateInput() {
       description: 'A custom sky coordinate entered by the observer.',
     }
 
+    // Immediate feedback: swing the telescope while the lookup runs.
     setTelescopePointing(raVal, decVal)
-    targetObject(coordObj)
+
+    try {
+      const data = await identifyMutation.mutateAsync({ ra: raVal, dec: decVal })
+      if (data?.found && data.object) {
+        const sep = data.separation_deg != null ? ` (${data.separation_deg.toFixed(3)}° away)` : ''
+        setNote(`Found: ${data.object.name}${sep}`)
+        targetObject(data.object)
+      } else {
+        setNote(`No catalogued object within ${data?.radius_deg ?? 0.1}° — showing empty field.`)
+        targetObject(coordObj)
+      }
+    } catch (e) {
+      setNote('Lookup failed — showing empty field.')
+      targetObject(coordObj)
+    }
   }
 
   return (
@@ -111,13 +130,21 @@ export default function CoordinateInput() {
         </p>
       )}
 
+      {note && (
+        <p style={{ color: 'var(--color-dim)', fontSize: '0.75rem', marginBottom: 10 }}>
+          {note}
+        </p>
+      )}
+
       <button
         id="point-telescope-btn"
         className="btn-primary"
-        style={{ width: '100%', justifyContent: 'center' }}
+        style={{ width: '100%', justifyContent: 'center', gap: 8 }}
         onClick={handlePoint}
+        disabled={identifyMutation.isPending}
       >
-        POINT TELESCOPE
+        {identifyMutation.isPending && <span className="spinner" />}
+        {identifyMutation.isPending ? 'IDENTIFYING…' : 'POINT TELESCOPE'}
       </button>
 
       {/* Corner decorations */}

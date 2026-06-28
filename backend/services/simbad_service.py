@@ -27,7 +27,7 @@ def _set_cached(key: str, data: Any) -> None:
     _cache[key] = (data, time.time())
 
 
-SIMBAD_TAP = "http://simbad.u-strasbg.fr/simbad/sim-tap/sync"
+SIMBAD_TAP = "https://simbad.cds.unistra.fr/simbad/sim-tap/sync"
 
 # Hardcoded well-known objects for instant lookup (fallback/popular list)
 KNOWN_OBJECTS: Dict[str, CelestialObject] = {
@@ -234,6 +234,14 @@ async def search_simbad(query: str) -> Optional[CelestialObject]:
         except Exception:
             return None
 
+    result = _parse_simbad_rows(data, fallback_name=query)
+    if result is not None:
+        _set_cached(cache_key, result)
+    return result
+
+
+def _parse_simbad_rows(data: Dict[str, Any], fallback_name: str) -> Optional[CelestialObject]:
+    """Parse a SIMBAD TAP JSON response (first/closest row) into a CelestialObject."""
     rows = data.get("data", [])
     cols = data.get("metadata", [])
     if not rows or not cols:
@@ -250,7 +258,7 @@ async def search_simbad(query: str) -> Optional[CelestialObject]:
             return None
 
     row = rows[0]
-    main_id = get_val(row, "main_id") or query
+    main_id = get_val(row, "main_id") or fallback_name
     otype = get_val(row, "otype") or "star"
     ra = get_val(row, "ra")
     dec = get_val(row, "dec")
@@ -266,8 +274,54 @@ async def search_simbad(query: str) -> Optional[CelestialObject]:
     # Map SIMBAD object type to our type
     obj_type = _map_simbad_type(otype)
 
-    result = _build_simbad_response(main_id, obj_type, ra, dec, dist_ly, sp_type)
-    _set_cached(cache_key, result)
+    return _build_simbad_response(main_id, obj_type, ra, dec, dist_ly, sp_type)
+
+
+async def identify_by_coordinates(
+    ra: float, dec: float, radius_deg: float = 0.1
+) -> Optional[CelestialObject]:
+    """
+    Find the catalogued object nearest the given sky coordinates via a SIMBAD
+    cone search. Returns the closest match, or None if nothing is catalogued
+    within the radius. CIRCLE/CONTAINS use true spherical geometry, so RA
+    wraparound at 0/360 and the celestial poles are handled correctly.
+    """
+    cache_key = f"identify:{round(ra, 3)}:{round(dec, 3)}:{radius_deg}"
+    cached = _get_cached(cache_key)
+    if cached is not None:
+        return cached
+
+    adql_query = f"""
+        SELECT TOP 5
+            main_id, otype, ra, dec, plx_value, sp_type,
+            DISTANCE(POINT('ICRS', ra, dec), POINT('ICRS', {ra}, {dec})) AS sep
+        FROM basic
+        WHERE CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', {ra}, {dec}, {radius_deg})) = 1
+          AND ra IS NOT NULL
+        ORDER BY sep ASC
+    """
+
+    params = {
+        "REQUEST": "doQuery",
+        "LANG": "ADQL",
+        "QUERY": adql_query,
+        "FORMAT": "json",
+    }
+
+    # Cone searches are fast; keep the timeout below the frontend's so it fails
+    # fast rather than letting the client give up first.
+    async with httpx.AsyncClient(timeout=12.0) as client:
+        try:
+            resp = await client.get(SIMBAD_TAP, params=params)
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+        except Exception:
+            return None
+
+    result = _parse_simbad_rows(data, fallback_name=f"Object near {ra:.4f}, {dec:.4f}")
+    if result is not None:
+        _set_cached(cache_key, result)
     return result
 
 

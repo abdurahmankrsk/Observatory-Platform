@@ -65,12 +65,12 @@ async def fetch_exoplanets(
     else:
         where_clause = "default_flag=1 AND pl_rade IS NOT NULL"
 
+    # IPAC's TAP is ADQL/Oracle-backed: row limiting is `SELECT TOP n`, not `LIMIT`.
     query = (
-        f"SELECT pl_name, pl_rade, pl_masse, pl_orbper, pl_orbsmax, "
+        f"SELECT TOP {limit} pl_name, pl_rade, pl_masse, pl_orbper, pl_orbsmax, "
         f"st_teff, st_rad, sy_dist, ra, dec, pl_eqt "
         f"FROM ps WHERE {where_clause} "
-        f"ORDER BY sy_dist ASC "
-        f"LIMIT {limit}"
+        f"ORDER BY sy_dist ASC"
     )
 
     params = {"query": query, "format": "json"}
@@ -141,9 +141,9 @@ async def fetch_exoplanet_by_name(name: str, api_key: str = "DEMO_KEY") -> Optio
 
     # Direct query if not in cache
     query = (
-        f"SELECT pl_name, pl_rade, pl_masse, pl_orbper, pl_orbsmax, "
+        f"SELECT TOP 1 pl_name, pl_rade, pl_masse, pl_orbper, pl_orbsmax, "
         f"st_teff, st_rad, sy_dist, ra, dec, pl_eqt "
-        f"FROM ps WHERE default_flag=1 AND LOWER(pl_name) LIKE '%{name_lower}%' LIMIT 1"
+        f"FROM ps WHERE default_flag=1 AND LOWER(pl_name) LIKE '%{name_lower}%'"
     )
     params = {"query": query, "format": "json"}
 
@@ -158,7 +158,11 @@ async def fetch_exoplanet_by_name(name: str, api_key: str = "DEMO_KEY") -> Optio
     if not raw_data:
         return None
 
-    row = raw_data[0]
+    return _build_exoplanet_from_row(raw_data[0])
+
+
+def _build_exoplanet_from_row(row: dict) -> ExoplanetResponse:
+    """Build an ExoplanetResponse from a single NASA Exoplanet Archive `ps` row."""
     name_found = row.get("pl_name", "Unknown")
     dist_parsec = row.get("sy_dist")
     dist_ly = dist_parsec * 3.26156 if dist_parsec is not None else None
@@ -183,6 +187,43 @@ async def fetch_exoplanet_by_name(name: str, api_key: str = "DEMO_KEY") -> Optio
         description=_describe_exoplanet(exo_data),
         exoplanet=exo_data,
     )
+
+
+async def fetch_exoplanet_by_coordinates(
+    ra: float, dec: float, radius_deg: float = 0.05, api_key: str = "DEMO_KEY"
+) -> Optional[ExoplanetResponse]:
+    """
+    Find a confirmed exoplanet whose host star lies within `radius_deg` of the
+    given sky coordinates. Matches by position, which is far more reliable than
+    name matching (SIMBAD's `* alf Lyr` vs NASA's `51 Peg b`).
+    """
+    cache_key = f"exo_coord:{round(ra, 3)}:{round(dec, 3)}:{radius_deg}"
+    cached = _get_cached(cache_key)
+    if cached is not None:
+        return cached
+
+    query = (
+        f"SELECT TOP 1 pl_name, pl_rade, pl_masse, pl_orbper, pl_orbsmax, "
+        f"st_teff, st_rad, sy_dist, ra, dec, pl_eqt "
+        f"FROM ps WHERE default_flag=1 "
+        f"AND CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', {ra}, {dec}, {radius_deg})) = 1"
+    )
+    params = {"query": query, "format": "json"}
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.get(EXOPLANET_BASE, params=params)
+            resp.raise_for_status()
+            raw_data = resp.json()
+        except Exception:
+            return None
+
+    if not raw_data:
+        return None
+
+    result = _build_exoplanet_from_row(raw_data[0])
+    _set_cached(cache_key, result)
+    return result
 
 
 async def fetch_near_earth_asteroids(
