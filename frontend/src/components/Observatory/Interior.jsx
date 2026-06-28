@@ -9,6 +9,7 @@ import gsap from 'gsap'
 import { Stars } from '@react-three/drei'
 import Telescope from './Telescope'
 import Dome from './Dome'
+import Terrain from './Terrain'
 import useObservatoryStore from '../../store/observatoryStore'
 
 // Half-angle of the door gap in the cylinder wall (rad)
@@ -250,11 +251,6 @@ export default function Interior() {
       <mesh position={[0, 8.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[8, 9.0, 64]} />
         <meshStandardMaterial color="#162535" metalness={0.70} roughness={0.30} side={THREE.DoubleSide} />
-      </mesh>
-      {/* Parapet outer edge lip */}
-      <mesh position={[0, 8.02, 0]}>
-        <torusGeometry args={[9.0, 0.18, 8, 64]} />
-        <meshStandardMaterial color="#243548" metalness={0.80} roughness={0.20} />
       </mesh>
 
       {/* Wall mid-rail — also gapped so it doesn't cross the doorway */}
@@ -546,11 +542,8 @@ export default function Interior() {
         </group>
       ))}
 
-      {/* Exterior hill silhouette */}
-      <mesh position={[0, -120, 0]}>
-        <sphereGeometry args={[120, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#070A0D" roughness={1.0} metalness={0.0} />
-      </mesh>
+      {/* Exterior grassy hilltop, path, grass & rocks */}
+      <Terrain />
     </group>
   )
 }
