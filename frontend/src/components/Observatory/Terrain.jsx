@@ -8,6 +8,7 @@
  */
 import React, { useMemo } from 'react'
 import * as THREE from 'three'
+import { generateNoiseTexture } from '../../utils/proceduralTextures'
 
 // Deterministic PRNG so the scatter is identical every render.
 function makeRng(seed) {
@@ -48,42 +49,70 @@ function onPath(x, z) {
 }
 
 export default function Terrain() {
-  // ── Ground ──
+  // Tiled noise used as a bump map to give the grass & dirt surface texture.
+  const grassBump = useMemo(() => {
+    const t = generateNoiseTexture(256, 11)
+    t.repeat.set(34, 34)
+    return t
+  }, [])
+  const dirtBump = useMemo(() => {
+    const t = generateNoiseTexture(256, 73)
+    t.repeat.set(3, 26)
+    return t
+  }, [])
+
+  // ── Ground (displaced + per-vertex colour variation: patchy grass + dirt) ──
   const groundGeo = useMemo(() => {
     const g = new THREE.PlaneGeometry(340, 340, 150, 150)
     g.rotateX(-Math.PI / 2)
     const p = g.attributes.position
-    for (let i = 0; i < p.count; i++) p.setY(i, groundHeight(p.getX(i), p.getZ(i)))
+    const col = new Float32Array(p.count * 3)
+    const c = new THREE.Color()
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = p.getZ(i)
+      p.setY(i, groundHeight(x, z))
+      // patchy green: low-freq patches + fine speckle
+      const patch = 0.5 + 0.5 * Math.sin(x * 0.07 + 1.3) * Math.cos(z * 0.063)
+      const fine = 0.5 + 0.5 * Math.sin(x * 0.9) * Math.sin(z * 0.8)
+      const lum = 0.12 + patch * 0.10 + fine * 0.03
+      c.setHSL(0.30 + patch * 0.05, 0.42 - fine * 0.1, lum)
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3))
     g.computeVertexNormals()
     return g
   }, [])
 
-  // ── Grass tufts (instanced thin cones) ──
+  // ── Grass (instanced small blades, placed in tufts for a lush look) ──
   const grass = useMemo(() => {
-    const count = 2400
-    const blade = new THREE.ConeGeometry(0.05, 0.6, 3, 1, true)
-    blade.translate(0, 0.3, 0)
+    const maxBlades = 6500
+    const blade = new THREE.ConeGeometry(0.04, 0.42, 3, 1, true)
+    blade.translate(0, 0.21, 0)
     const mesh = new THREE.InstancedMesh(
-      blade, new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 }), count)
+      blade, new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 }), maxBlades)
     const r = makeRng(7)
     const d = new THREE.Object3D()
     const c = new THREE.Color()
-    let n = 0, guard = 0
-    while (n < count && guard < count * 8) {
-      guard++
+    let n = 0
+    for (let ci = 0; ci < 1100 && n < maxBlades; ci++) {
       const ang = r() * Math.PI * 2
-      const rad = 9.5 + Math.pow(r(), 0.7) * 62
-      const x = Math.cos(ang) * rad, z = Math.sin(ang) * rad
-      if (onPath(x, z)) continue
-      d.position.set(x, groundHeight(x, z), z)
-      d.rotation.set((r() - 0.5) * 0.35, r() * Math.PI * 2, (r() - 0.5) * 0.35)
-      const s = 0.55 + r() * 1.0
-      d.scale.set(s * (0.7 + r() * 0.5), s * (0.8 + r() * 0.9), s * (0.7 + r() * 0.5))
-      d.updateMatrix()
-      mesh.setMatrixAt(n, d.matrix)
-      c.setHSL(0.30 + r() * 0.07, 0.45, 0.14 + r() * 0.12)
-      mesh.setColorAt(n, c)
-      n++
+      const rad = 9.5 + Math.pow(r(), 0.8) * 34      // concentrated near the building
+      const cx = Math.cos(ang) * rad, cz = Math.sin(ang) * rad
+      if (onPath(cx, cz)) continue
+      const blades = 4 + Math.floor(r() * 5)         // 4–8 blades per tuft
+      const hue = 0.30 + r() * 0.06
+      for (let b = 0; b < blades && n < maxBlades; b++) {
+        const x = cx + (r() - 0.5) * 0.5, z = cz + (r() - 0.5) * 0.5
+        d.position.set(x, groundHeight(x, z), z)
+        d.rotation.set((r() - 0.5) * 0.4, r() * Math.PI * 2, (r() - 0.5) * 0.4)
+        const s = 0.6 + r() * 0.9
+        d.scale.set(s * (0.7 + r() * 0.5), s, s * (0.7 + r() * 0.5))
+        d.updateMatrix()
+        mesh.setMatrixAt(n, d.matrix)
+        c.setHSL(hue, 0.45, 0.13 + r() * 0.13)
+        mesh.setColorAt(n, c)
+        n++
+      }
     }
     mesh.count = n
     mesh.instanceMatrix.needsUpdate = true
@@ -125,50 +154,28 @@ export default function Terrain() {
     return mesh
   }, [])
 
-  // ── Path bed (dirt ribbon conforming to the ground) ──
+  // ── Path bed (dirt/gravel ribbon conforming to the ground) ──
   const pathGeo = useMemo(() => {
-    const g = new THREE.PlaneGeometry(PATH_HALF * 2, PATH_Z1 - PATH_Z0, 6, 48)
+    const g = new THREE.PlaneGeometry(PATH_HALF * 2, PATH_Z1 - PATH_Z0, 10, 90)
     g.rotateX(-Math.PI / 2)
     const cz = (PATH_Z0 + PATH_Z1) / 2
     const p = g.attributes.position
+    const col = new Float32Array(p.count * 3)
+    const c = new THREE.Color()
     for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i), z = p.getZ(i) + cz
+      const x = p.getX(i)
+      const z = p.getZ(i) + cz
       p.setZ(i, z)
       p.setY(i, groundHeight(x, z) + 0.04)
+      // speckled gravel colour
+      const sp = 0.5 + 0.5 * Math.sin(x * 5.1 + z * 4.3) * Math.cos(z * 3.7 - x * 2.9)
+      const v = 0.14 + sp * 0.12
+      c.setRGB(v * 1.05, v, v * 0.85)            // warm dirt/gravel
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b
     }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3))
     g.computeVertexNormals()
     return g
-  }, [])
-
-  // ── Flagstones along the path ──
-  const stones = useMemo(() => {
-    const mesh = new THREE.InstancedMesh(
-      new THREE.CylinderGeometry(0.55, 0.55, 0.08, 7),
-      new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0.05 }), 64)
-    const r = makeRng(53)
-    const d = new THREE.Object3D()
-    const c = new THREE.Color()
-    let n = 0
-    for (let z = PATH_Z0 + 1; z < PATH_Z1 - 1 && n < 64; z += 1.35) {
-      for (const side of [-0.75, 0.75]) {
-        const x = side + (r() - 0.5) * 0.5
-        const zz = z + (r() - 0.5) * 0.5
-        d.position.set(x, groundHeight(x, zz) + 0.06, zz)
-        d.rotation.set(0, r() * Math.PI, 0)
-        const s = 0.85 + r() * 0.4
-        d.scale.set(s, 1, s * (0.8 + r() * 0.4))
-        d.updateMatrix()
-        mesh.setMatrixAt(n, d.matrix)
-        const g = 0.18 + r() * 0.08
-        c.setRGB(g, g, g * 0.96)
-        mesh.setColorAt(n, c)
-        n++
-      }
-    }
-    mesh.count = n
-    mesh.instanceMatrix.needsUpdate = true
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
-    return mesh
   }, [])
 
   return (
@@ -177,12 +184,11 @@ export default function Terrain() {
       <directionalLight position={[-30, 40, 25]} intensity={1.4} color="#9DB4D8" />
 
       <mesh geometry={groundGeo} receiveShadow>
-        <meshStandardMaterial color="#1C3322" roughness={1} metalness={0} />
+        <meshStandardMaterial vertexColors roughness={1} metalness={0} bumpMap={grassBump} bumpScale={0.25} />
       </mesh>
       <mesh geometry={pathGeo}>
-        <meshStandardMaterial color="#2C2A22" roughness={1} metalness={0} />
+        <meshStandardMaterial vertexColors roughness={1} metalness={0} bumpMap={dirtBump} bumpScale={0.35} />
       </mesh>
-      <primitive object={stones} />
       <primitive object={rocks} />
       <primitive object={grass} />
     </group>
