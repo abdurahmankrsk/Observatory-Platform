@@ -75,6 +75,18 @@ class SearchResponse(BaseModel):
     total: int
 
 
+class IdentifyResponse(BaseModel):
+    """Result of a coordinate (cone-search) identification."""
+    found: bool
+    object: Optional[CelestialObject] = None
+    query_ra: float
+    query_dec: float
+    radius_deg: float
+    separation_deg: Optional[float] = Field(
+        None, description="Angular distance from the queried point to the match, in degrees"
+    )
+
+
 class PopularObject(BaseModel):
     """Quick-access popular object for the observatory panel."""
     id: str

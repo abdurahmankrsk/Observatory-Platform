@@ -178,7 +178,7 @@ export default function Interior() {
       {/* Base floor disc */}
       <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[7.8, 64]} />
-        <meshStandardMaterial color="#141E28" roughness={0.75} metalness={0.05} />
+        <meshStandardMaterial color="#9298A0" roughness={0.7} metalness={0.05} />
       </mesh>
 
       {/* Subtle tile shimmer overlay */}
@@ -221,52 +221,52 @@ export default function Interior() {
       {/* EXTERIOR — bottom section (door gap) */}
       <mesh position={[0, DOOR_H / 2, 0]}>
         <cylinderGeometry args={[8.5, 8.5, DOOR_H, 64, 1, true, GAP_ANGLE, Math.PI * 2 - GAP_ANGLE * 2]} />
-        <meshStandardMaterial color="#1A2E3E" roughness={0.75} metalness={0.05} side={THREE.FrontSide} />
+        <meshStandardMaterial color="#AEB4BE" roughness={0.75} metalness={0.05} side={THREE.FrontSide} />
       </mesh>
       {/* EXTERIOR — top section (above door, solid wall all the way to y=9) */}
       <mesh position={[0, DOOR_H + (9 - DOOR_H) / 2, 0]}>
         <cylinderGeometry args={[8.5, 8.5, 9 - DOOR_H, 64, 1, true]} />
-        <meshStandardMaterial color="#1A2E3E" roughness={0.75} metalness={0.05} side={THREE.FrontSide} />
+        <meshStandardMaterial color="#AEB4BE" roughness={0.75} metalness={0.05} side={THREE.FrontSide} />
       </mesh>
 
       {/* INTERIOR — bottom section (door gap) */}
       <mesh position={[0, DOOR_H / 2, 0]}>
         <cylinderGeometry args={[8, 8, DOOR_H, 64, 1, true, GAP_ANGLE, Math.PI * 2 - GAP_ANGLE * 2]} />
-        <meshStandardMaterial color="#1A2E3E" roughness={0.75} metalness={0.05} side={THREE.BackSide} />
+        <meshStandardMaterial color="#AEB4BE" roughness={0.75} metalness={0.05} side={THREE.BackSide} />
       </mesh>
       {/* INTERIOR — top section (solid, above door) */}
       <mesh position={[0, DOOR_H + (8 - DOOR_H) / 2, 0]}>
         <cylinderGeometry args={[8, 8, 8 - DOOR_H, 64, 1, true]} />
-        <meshStandardMaterial color="#1A2E3E" roughness={0.75} metalness={0.05} side={THREE.BackSide} />
+        <meshStandardMaterial color="#AEB4BE" roughness={0.75} metalness={0.05} side={THREE.BackSide} />
       </mesh>
 
       {/* Tapered junction collar — open-ended so it doesn’t cap the dome opening */}
       <mesh position={[0, 9, 0]}>
         <cylinderGeometry args={[8, 8.5, 1.0, 64, 1, true]} />
-        <meshStandardMaterial color="#1A2E3E" roughness={0.75} metalness={0.05} side={THREE.FrontSide} />
+        <meshStandardMaterial color="#AEB4BE" roughness={0.75} metalness={0.05} side={THREE.FrontSide} />
       </mesh>
 
       {/* Parapet ring — a flat ledge at the dome/wall junction visible from outside.
           Radius 9.0, wider than the dome sphere (r=8), makes walls clearly enclose dome. */}
       <mesh position={[0, 8.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[8, 9.0, 64]} />
-        <meshStandardMaterial color="#162535" metalness={0.70} roughness={0.30} side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#B0B6C0" metalness={0.35} roughness={0.4} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Wall mid-rail — also gapped so it doesn't cross the doorway */}
       <mesh position={[0, 3.0, 0]}>
         <cylinderGeometry args={[7.96, 7.96, 0.12, 64, 1, true, GAP_ANGLE, Math.PI * 2 - GAP_ANGLE * 2]} />
-        <meshStandardMaterial color="#243548" metalness={0.6} roughness={0.35} side={THREE.BackSide} />
+        <meshStandardMaterial color="#BCC2CA" metalness={0.6} roughness={0.35} side={THREE.BackSide} />
       </mesh>
       {/* Wall base skirting board — gapped */}
       <mesh position={[0, 0.25, 0]}>
         <cylinderGeometry args={[7.96, 7.96, 0.5, 64, 1, true, GAP_ANGLE, Math.PI * 2 - GAP_ANGLE * 2]} />
-        <meshStandardMaterial color="#1A2838" metalness={0.5} roughness={0.4} side={THREE.BackSide} />
+        <meshStandardMaterial color="#989EA8" metalness={0.45} roughness={0.45} side={THREE.BackSide} />
       </mesh>
       {/* Wall top trim — above door height, full ring */}
       <mesh position={[0, 7.85, 0]}>
         <cylinderGeometry args={[7.96, 7.96, 0.12, 64, 1, true]} />
-        <meshStandardMaterial color="#243548" metalness={0.6} roughness={0.35} side={THREE.BackSide} />
+        <meshStandardMaterial color="#BCC2CA" metalness={0.6} roughness={0.35} side={THREE.BackSide} />
       </mesh>
 
       {/* Vertical pilasters (skip the one at the doorway, +Z, so it doesn't
@@ -281,7 +281,7 @@ export default function Interior() {
             rotation={[0, -angle, 0]}
           >
             <boxGeometry args={[0.14, 8, 0.18]} />
-            <meshStandardMaterial color="#1E3248" metalness={0.6} roughness={0.4} />
+            <meshStandardMaterial color="#B8BEC8" metalness={0.6} roughness={0.4} />
           </mesh>
         )
       })}
@@ -296,7 +296,7 @@ export default function Interior() {
             rotation={[0, -angle, 0]}
           >
             <boxGeometry args={[1.4, 2.6, 0.06]} />
-            <meshStandardMaterial color="#17293A" metalness={0.3} roughness={0.7} side={THREE.BackSide} />
+            <meshStandardMaterial color="#A6ACB6" metalness={0.2} roughness={0.7} side={THREE.BackSide} />
           </mesh>
         )
       })}
@@ -315,15 +315,15 @@ export default function Interior() {
           <group key={`butt-${i}`} position={[x * 8.55, 0, z * 8.55]} rotation={[0, -angle, 0]}>
             <mesh position={[0, 4.4, 0]} castShadow>
               <boxGeometry args={[0.34, 8.3, 0.28]} />
-              <meshStandardMaterial color="#16262F" metalness={0.55} roughness={0.5} />
+              <meshStandardMaterial color="#A8AEB8" metalness={0.25} roughness={0.55} />
             </mesh>
             <mesh position={[0, 8.45, 0]}>
               <boxGeometry args={[0.52, 0.34, 0.44]} />
-              <meshStandardMaterial color="#243A4E" metalness={0.7} roughness={0.3} />
+              <meshStandardMaterial color="#C2C8D0" metalness={0.7} roughness={0.3} />
             </mesh>
             <mesh position={[0, 0.45, 0]}>
               <boxGeometry args={[0.54, 0.6, 0.46]} />
-              <meshStandardMaterial color="#243A4E" metalness={0.7} roughness={0.3} />
+              <meshStandardMaterial color="#C2C8D0" metalness={0.7} roughness={0.3} />
             </mesh>
           </group>
         )
@@ -333,14 +333,14 @@ export default function Interior() {
       {[2.4, 5.6].map((y, i) => (
         <mesh key={`xband-${i}`} position={[0, y, 0]}>
           <cylinderGeometry args={[8.58, 8.58, 0.2, 64, 1, true, GAP_ANGLE, Math.PI * 2 - GAP_ANGLE * 2]} />
-          <meshStandardMaterial color="#243548" metalness={0.7} roughness={0.3} side={THREE.DoubleSide} />
+          <meshStandardMaterial color="#BCC2CA" metalness={0.7} roughness={0.3} side={THREE.DoubleSide} />
         </mesh>
       ))}
 
       {/* Base plinth — a wider skirt at ground level */}
       <mesh position={[0, 0.55, 0]}>
         <cylinderGeometry args={[8.78, 8.95, 1.1, 64, 1, true, GAP_ANGLE, Math.PI * 2 - GAP_ANGLE * 2]} />
-        <meshStandardMaterial color="#0F1B24" metalness={0.4} roughness={0.6} side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#7C828C" metalness={0.3} roughness={0.6} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Lit windows — set between the two accent bands (y 2.4 & 5.6) and offset
@@ -492,18 +492,19 @@ export default function Interior() {
 
       {/* ── Lighting ──────────────────────────────────────────────────── */}
 
-      {/* Bright ambient */}
-      <ambientLight color="#C8DCFF" intensity={4.0} />
+      {/* Low ambient for a night feel (interior is carried by the point lights
+          below; the exterior reads dark so the white dome catches the moonlight) */}
+      <ambientLight color="#C8DCFF" intensity={1.8} />
 
       {/* Main cool overhead fill — strong enough to read by */}
-      <pointLight position={[0, 6, 0]} color="#D8EAFF" intensity={8.0} distance={22} decay={1.5} />
+      <pointLight position={[0, 6, 0]} color="#D8EAFF" intensity={13} distance={24} decay={1.4} />
 
       {/* Spotlight on telescope */}
       <spotLight
         position={[0, 7.5, 0]}
         angle={0.85}
         penumbra={0.5}
-        intensity={12}
+        intensity={16}
         color="#E0EEFF"
         castShadow
         shadow-mapSize={[512, 512]}
@@ -526,7 +527,7 @@ export default function Interior() {
           {/* Sconce housing box */}
           <mesh>
             <boxGeometry args={[0.5, 0.12, 0.12]} />
-            <meshStandardMaterial color="#1E3248" metalness={0.8} roughness={0.2} />
+            <meshStandardMaterial color="#B8BEC8" metalness={0.8} roughness={0.2} />
           </mesh>
           {/* Upward cone reflector */}
           <mesh position={[0, 0.14, 0]}>
@@ -538,7 +539,7 @@ export default function Interior() {
             <boxGeometry args={[0.42, 0.03, 0.03]} />
             <meshBasicMaterial color="#B8D8FF" />
           </mesh>
-          <pointLight color="#AACFEE" intensity={3.5} distance={12} decay={1.8} />
+          <pointLight color="#AACFEE" intensity={5} distance={13} decay={1.7} />
         </group>
       ))}
 

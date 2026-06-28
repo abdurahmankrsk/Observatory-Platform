@@ -14,14 +14,14 @@ function makeGrassTexture() {
   const s = 256
   const cv = document.createElement('canvas'); cv.width = cv.height = s
   const x = cv.getContext('2d')
-  x.fillStyle = '#223c27'; x.fillRect(0, 0, s, s)
+  x.fillStyle = '#0e1a12'; x.fillRect(0, 0, s, s)
   for (let i = 0; i < 150; i++) {              // soft darker/lighter patches
-    const g = 40 + Math.random() * 70
+    const g = 22 + Math.random() * 42
     x.fillStyle = `rgba(${g * 0.55},${g},${g * 0.6},0.22)`
     x.beginPath(); x.arc(Math.random() * s, Math.random() * s, 8 + Math.random() * 40, 0, 7); x.fill()
   }
   for (let i = 0; i < 6000; i++) {             // blade speckle
-    const g = 55 + Math.random() * 130
+    const g = 30 + Math.random() * 80
     x.fillStyle = `rgba(${g * 0.5},${g},${g * 0.55},${0.25 + Math.random() * 0.5})`
     x.fillRect(Math.random() * s, Math.random() * s, 1, 2 + Math.random() * 4)
   }
@@ -31,9 +31,9 @@ function makeDirtTexture() {
   const s = 256
   const cv = document.createElement('canvas'); cv.width = cv.height = s
   const x = cv.getContext('2d')
-  x.fillStyle = '#3a3026'; x.fillRect(0, 0, s, s)
+  x.fillStyle = '#221b13'; x.fillRect(0, 0, s, s)
   for (let i = 0; i < 1400; i++) {             // pebbles / gravel
-    const g = 50 + Math.random() * 90
+    const g = 28 + Math.random() * 58
     x.fillStyle = `rgba(${g},${g * 0.92},${g * 0.78},${0.3 + Math.random() * 0.5})`
     const r = 1 + Math.random() * 3.5
     x.beginPath(); x.arc(Math.random() * s, Math.random() * s, r, 0, 7); x.fill()
@@ -120,7 +120,7 @@ export default function Terrain() {
         d.scale.set(s * (0.7 + r() * 0.5), s, s * (0.7 + r() * 0.5))
         d.updateMatrix()
         mesh.setMatrixAt(n, d.matrix)
-        c.setHSL(hue, 0.45, 0.13 + r() * 0.13)
+        c.setHSL(hue, 0.45, 0.07 + r() * 0.08)
         mesh.setColorAt(n, c)
         n++
       }
@@ -154,8 +154,8 @@ export default function Terrain() {
       d.scale.set(s, s * (0.6 + r() * 0.5), s)
       d.updateMatrix()
       mesh.setMatrixAt(n, d.matrix)
-      const g = 0.12 + r() * 0.1
-      c.setRGB(g, g + 0.02, g + 0.05)
+      const g = 0.06 + r() * 0.05
+      c.setRGB(g, g + 0.015, g + 0.035)
       mesh.setColorAt(n, c)
       n++
     }
@@ -184,7 +184,7 @@ export default function Terrain() {
   return (
     <group>
       {/* dim moonlight to give the ground form over the flat ambient */}
-      <directionalLight position={[-30, 40, 25]} intensity={1.4} color="#9DB4D8" />
+      <directionalLight position={[-30, 40, 25]} intensity={1.05} color="#9DB4D8" />
 
       <mesh geometry={groundGeo} receiveShadow>
         <meshStandardMaterial map={grassTex} bumpMap={grassTex} bumpScale={0.5} roughness={1} metalness={0} />

@@ -7,14 +7,15 @@ import React, { useRef, useEffect } from 'react'
 import gsap from 'gsap'
 import useObservatoryStore from '../../store/observatoryStore'
 
+// White-painted observatory telescope with steel/chrome fittings.
 const MAT = {
-  bodyDark:   { color: '#1A2E40', metalness: 0.75, roughness: 0.25 },
-  bodyMid:    { color: '#223344', metalness: 0.80, roughness: 0.20 },
-  bodyLight:  { color: '#2E4560', metalness: 0.85, roughness: 0.18 },
-  chrome:     { color: '#8AAFCC', metalness: 0.95, roughness: 0.10 },
-  darkChrome: { color: '#4A6070', metalness: 0.90, roughness: 0.15 },
+  bodyDark:   { color: '#8A909A', metalness: 0.4, roughness: 0.38 },
+  bodyMid:    { color: '#AAB0BA', metalness: 0.4, roughness: 0.34 },
+  bodyLight:  { color: '#C4C9D1', metalness: 0.4, roughness: 0.32 },
+  chrome:     { color: '#9CB6CC', metalness: 0.95, roughness: 0.12 },
+  darkChrome: { color: '#717986', metalness: 0.9,  roughness: 0.18 },
   accent:     { color: '#C0D8E8', metalness: 0.95, roughness: 0.08 },
-  rubberGrip: { color: '#0D1820', metalness: 0.0,  roughness: 0.95 },
+  rubberGrip: { color: '#15191E', metalness: 0.0,  roughness: 0.95 },
   lensGlass:  { color: '#00AAFF', emissive: '#00AAFF', emissiveIntensity: 1.2, metalness: 0.1, roughness: 0.05, transparent: true, opacity: 0.85 },
 }
 function M({ c }) { return <meshStandardMaterial {...c} /> }

@@ -83,8 +83,9 @@ export default function Dome({ radius = 8 }) {
   // solid cap filling the semicircle at the top of the strip.
   const band = useMemo(() => makeSlottedBand(radius, slotHalf, 0, 44, 80), [radius])
 
-  const matOuter = { color: '#1E3248', metalness: 0.7, roughness: 0.3 }
-  const matInner = { color: '#0D1C2C', metalness: 0.3, roughness: 0.78 }
+  // White-painted-metal dome (matte), like real observatories.
+  const matOuter = { color: '#C6CBD3', metalness: 0.18, roughness: 0.52 }
+  const matInner = { color: '#9098A2', metalness: 0.12, roughness: 0.7 }
 
   // ── Structural detail (all inside domeRef so it tracks the dome; all kept off
   //    the front slit so it never blocks the telescope) ──
@@ -135,7 +136,7 @@ export default function Dome({ radius = 8 }) {
         {[slotHalf, -slotHalf].map((x, i) => (
           <mesh key={i} position={[x, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
             <torusGeometry args={[railR, 0.09, 8, 40, Math.PI / 2]} />
-            <meshStandardMaterial color="#3A5A7A" metalness={0.88} roughness={0.16} />
+            <meshStandardMaterial color="#6E7682" metalness={0.85} roughness={0.22} />
           </mesh>
         ))}
 
@@ -146,10 +147,10 @@ export default function Dome({ radius = 8 }) {
         {ribAngles.map((a, i) => (
           <group key={`rib-${i}`}>
             <mesh geometry={ribOut} rotation={[0, -Math.PI / 2 + a, 0]}>
-              <meshStandardMaterial color="#26405A" metalness={0.78} roughness={0.26} />
+              <meshStandardMaterial color="#B4BAC4" metalness={0.2} roughness={0.5} />
             </mesh>
             <mesh geometry={ribIn} rotation={[0, -Math.PI / 2 + a, 0]}>
-              <meshStandardMaterial color="#1A2E40" metalness={0.5} roughness={0.5} />
+              <meshStandardMaterial color="#8E96A0" metalness={0.15} roughness={0.6} />
             </mesh>
           </group>
         ))}
@@ -157,7 +158,7 @@ export default function Dome({ radius = 8 }) {
         {/* ── Latitude bands (gapped at the front so they skip the slit) ── */}
         {bands.map((b, i) => (
           <mesh key={`band-${i}`} geometry={b.geo} position={[0, b.y, 0]}>
-            <meshStandardMaterial color="#2E4A66" metalness={0.8} roughness={0.24} />
+            <meshStandardMaterial color="#AEB4BE" metalness={0.2} roughness={0.45} />
           </mesh>
         ))}
 
@@ -167,7 +168,7 @@ export default function Dome({ radius = 8 }) {
         {/* ── Base rim ring (rotates with the dome) ── */}
         <mesh position={[0, 0.04, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[radius - 0.06, 0.20, 10, 72]} />
-          <meshStandardMaterial color="#2A4060" metalness={0.85} roughness={0.18} />
+          <meshStandardMaterial color="#AAB0BA" metalness={0.2} roughness={0.45} />
         </mesh>
       </group>
     </group>
