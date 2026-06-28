@@ -73,6 +73,7 @@ uniform vec3 uSurfaceColor;
 uniform vec3 uHotColor;
 uniform float uConvectionSpeed;
 uniform float uConvectionScale;
+uniform float uMuted;   // 0 = bright star, →1 = dim (brown dwarf)
 
 varying vec3 vPosition;
 varying vec3 vNormal;
@@ -104,9 +105,12 @@ void main() {
   // Fresnel corona glow at edges
   float fresnel = 1.0 - max(nDotV, 0.0);
   fresnel = pow(fresnel, 2.0);
-  vec3 corona = uHotColor * fresnel * 0.6;
+  vec3 corona = uHotColor * fresnel * 0.6 * (1.0 - uMuted);
 
-  gl_FragColor = vec4(surface + corona, 1.0);
+  // Muted (sub-stellar) bodies are dimmer and have weak limb glow.
+  vec3 outColor = surface * (1.0 - uMuted * 0.45) + corona;
+
+  gl_FragColor = vec4(outColor, 1.0);
 }
 `
 
@@ -122,6 +126,7 @@ export default function Star({ params, position = [0, 0, 0] }) {
     uHotColor: { value: params?.glowColor ?? new THREE.Color(1, 0.97, 0.85) },
     uConvectionSpeed: { value: params?.convectionSpeed ?? 0.4 },
     uConvectionScale: { value: params?.convectionScale ?? 2.0 },
+    uMuted: { value: params?.mutedSurface ?? 0 },
   }), [params])
 
   // Corona particles
@@ -182,11 +187,24 @@ export default function Star({ params, position = [0, 0, 0] }) {
           size={0.03}
           sizeAttenuation
           transparent
-          opacity={0.6}
+          opacity={params?.coronaOpacity ?? 0.6}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
       </points>
+
+      {/* Outer corona glow shell — larger for giants/supergiants, faint for dwarfs */}
+      <mesh frustumCulled={false}>
+        <sphereGeometry args={[radius * (params?.coronaScale ?? 1.5), 32, 32]} />
+        <meshBasicMaterial
+          color={params?.glowColor ?? new THREE.Color(1, 0.9, 0.6)}
+          transparent
+          opacity={0.12 * (params?.glowIntensity ?? 0.6) * (1 - (params?.mutedSurface ?? 0))}
+          side={THREE.BackSide}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
 
       {/* Point light — illuminates nearby planets */}
       <pointLight

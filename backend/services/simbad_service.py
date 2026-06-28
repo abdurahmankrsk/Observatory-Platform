@@ -333,10 +333,11 @@ def _parse_simbad_rows(data: Dict[str, Any], fallback_name: str) -> Optional[Cel
         dist_parsec = 1000.0 / plx
         dist_ly = dist_parsec * 3.26156
 
-    # Map SIMBAD object type to our type
+    # Map SIMBAD object type to our coarse visual type, but keep the raw code so
+    # the frontend classifier can recover the precise sub-type (pulsar, SNR, …).
     obj_type = _map_simbad_type(otype)
 
-    return _build_simbad_response(main_id, obj_type, ra, dec, dist_ly, sp_type)
+    return _build_simbad_response(main_id, obj_type, ra, dec, dist_ly, sp_type, otype)
 
 
 async def identify_by_coordinates(
@@ -423,6 +424,26 @@ def _map_simbad_type(simbad_type: str) -> str:
     return "star"
 
 
+# Human-readable phrases for SIMBAD object-type codes. These both feed the
+# InfoPanel and act as a redundant signal for the frontend's description parser
+# (so even if its otype map misses a code, the words still classify correctly).
+_OTYPE_LABELS = {
+    "Psr": "pulsar",
+    "N*": "neutron star", "NS": "neutron star",
+    "BH": "black hole", "bH": "black hole",
+    "SNR": "supernova remnant", "SR?": "supernova remnant",
+    "PN": "planetary nebula", "PN?": "planetary nebula",
+    "GNe": "emission nebula", "BNe": "emission nebula", "HII": "emission nebula", "EmO": "emission nebula",
+    "RNe": "reflection nebula",
+    "DNe": "dark nebula", "MoC": "dark nebula",
+    "GlC": "globular cluster", "OpC": "open cluster", "Cl*": "open cluster",
+    "QSO": "quasar", "AGN": "active galactic nucleus", "Bla": "blazar", "BLL": "blazar",
+    "WD*": "white dwarf", "BD*": "brown dwarf",
+    "Y*O": "protostar", "TTau": "protostar",
+    "**": "binary star",
+}
+
+
 def _build_simbad_response(
     name: str,
     obj_type: str,
@@ -430,28 +451,40 @@ def _build_simbad_response(
     dec: Optional[float],
     dist_ly: Optional[float],
     sp_type: Optional[str],
+    otype: Optional[str] = None,
 ) -> CelestialObject:
     """Build a CelestialObject from SIMBAD data."""
+    code = (otype or "").strip()
+    label = _OTYPE_LABELS.get(code)
+
     if obj_type == "star" and sp_type:
+        # Mention the specific kind (pulsar, white dwarf, …) when SIMBAD gives one.
+        if label:
+            desc = f"A {label} ({sp_type}) catalogued in SIMBAD."
+        else:
+            desc = f"A {sp_type or 'main sequence'} star in the Milky Way."
         return StarResponse(
             id=name.lower().replace(" ", "_").replace("+", "p"),
             name=name,
             type="star",
+            otype=code or None,
             ra=ra,
             dec=dec,
             distance_ly=dist_ly,
-            description=f"A {sp_type or 'main sequence'} star in the Milky Way.",
+            description=desc,
             star=StarData(spectral_type=sp_type),
         )
 
+    described = label or obj_type
     return CelestialObject(
         id=name.lower().replace(" ", "_").replace("+", "p"),
         name=name,
         type=obj_type,
+        otype=code or None,
         ra=ra,
         dec=dec,
         distance_ly=dist_ly,
-        description=f"A {obj_type} discovered through deep-sky surveys.",
+        description=f"A {described} catalogued through deep-sky surveys.",
     )
 
 

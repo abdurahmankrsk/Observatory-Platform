@@ -8,6 +8,10 @@ class CelestialObject(BaseModel):
     id: str
     name: str
     type: str  # 'planet' | 'exoplanet' | 'asteroid' | 'star' | 'nebula' | 'galaxy'
+    # Raw SIMBAD object-type code (e.g. 'Psr', 'SNR', 'QSO', 'PN', 'WD*').
+    # The frontend procedural classifier uses this as a high-priority signal to
+    # pick a precise sub-type before falling back to description parsing.
+    otype: Optional[str] = Field(None, description="Raw catalog object-type code (SIMBAD)")
     ra: Optional[float] = Field(None, description="Right Ascension in degrees")
     dec: Optional[float] = Field(None, description="Declination in degrees")
     distance_ly: Optional[float] = Field(None, description="Distance in light-years")

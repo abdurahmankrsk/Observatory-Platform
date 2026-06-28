@@ -116,7 +116,10 @@ export default function InfoPanel() {
 
   if (!selectedObject || (!isTargeting && !isViewing)) return null
 
-  const badgeClass = `badge badge--${selectedObject.type}`
+  // Guard against an object with no/unknown type (e.g. an unclassifiable source)
+  // so the panel degrades gracefully instead of crashing the app.
+  const objType = selectedObject.type || 'unknown'
+  const badgeClass = `badge badge--${objType}`
 
   return (
     <div
@@ -139,7 +142,7 @@ export default function InfoPanel() {
     >
       {/* Object type badge */}
       <div style={{ marginBottom: 12 }}>
-        <span className={badgeClass}>{selectedObject.type.toUpperCase()}</span>
+        <span className={badgeClass}>{objType.toUpperCase()}</span>
       </div>
 
       {/* Object name */}

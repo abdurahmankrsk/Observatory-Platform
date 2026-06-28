@@ -46,9 +46,11 @@ export default function ProceduralAsteroid({ params, position = [0, 0, 0] }) {
   }, [radius, detail, noiseStrength, noiseScale])
 
   const color = useMemo(() => {
-    const c = params?.color ?? { r: 0.45, g: 0.38, b: 0.3 }
+    // The descriptor carries the rocky RGB in `surfaceColor`; `color` is a hex
+    // string used elsewhere, so prefer surfaceColor here.
+    const c = params?.surfaceColor ?? { r: 0.45, g: 0.38, b: 0.3 }
     return new THREE.Color(c.r, c.g, c.b)
-  }, [params?.color])
+  }, [params?.surfaceColor])
 
   // Tumbling rotation axes
   const rotSpeed = useMemo(() => ({
@@ -65,12 +67,31 @@ export default function ProceduralAsteroid({ params, position = [0, 0, 0] }) {
     }
   })
 
+  // Comet coma + tail particle field (streams away from an implied Sun at +X).
+  const tailGeo = useMemo(() => {
+    if (!params?.hasTail) return null
+    const count = 4000
+    const length = params?.tailLength ?? 8
+    const geo = new THREE.BufferGeometry()
+    const pos = new Float32Array(count * 3)
+    for (let i = 0; i < count; i++) {
+      const t = Math.pow(Math.random(), 1.5)      // denser near the nucleus
+      const spread = radius * (0.4 + t * 3.5)
+      pos[i * 3] = -t * length                      // tail trails toward -X
+      pos[i * 3 + 1] = (Math.random() - 0.5) * spread + t * length * 0.15
+      pos[i * 3 + 2] = (Math.random() - 0.5) * spread
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    return geo
+  }, [params?.hasTail, params?.tailLength, radius])
+
   // Cleanup geometry on unmount
   useEffect(() => {
     return () => {
       geometry.dispose()
+      if (tailGeo) tailGeo.dispose()
     }
-  }, [geometry])
+  }, [geometry, tailGeo])
 
   return (
     <group position={position}>
@@ -81,6 +102,35 @@ export default function ProceduralAsteroid({ params, position = [0, 0, 0] }) {
           metalness={params?.metalness ?? 0.1}
         />
       </mesh>
+
+      {/* Comet coma + tail */}
+      {params?.hasTail && (
+        <>
+          <mesh>
+            <sphereGeometry args={[radius * 1.8, 24, 24]} />
+            <meshBasicMaterial
+              color={params?.tailColor ?? new THREE.Color(0.6, 0.8, 1.0)}
+              transparent
+              opacity={0.18}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+            />
+          </mesh>
+          {tailGeo && (
+            <points geometry={tailGeo}>
+              <pointsMaterial
+                color={params?.tailColor ?? new THREE.Color(0.6, 0.8, 1.0)}
+                size={0.06}
+                sizeAttenuation
+                transparent
+                opacity={0.5}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+              />
+            </points>
+          )}
+        </>
+      )}
 
       {/* Dust halo (optional, faint point light for visual depth) */}
       <pointLight color="#AA9977" intensity={0.15} distance={radius * 8} />

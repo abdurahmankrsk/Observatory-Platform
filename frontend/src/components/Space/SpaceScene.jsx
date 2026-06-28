@@ -16,15 +16,11 @@ import { BlendFunction } from 'postprocessing'
 import * as THREE from 'three'
 
 import useObservatoryStore from '../../store/observatoryStore'
-import { useProceduralGen } from '../../hooks/useProceduralGen'
 import { useCameraFlight } from '../../hooks/useCameraFlight'
+import { useProceduralGen } from '../../hooks/useProceduralGen'
 import { computeSceneRadius } from '../../utils/astronomyMath'
 
-import ProceduralPlanet from './ProceduralPlanet'
-import ProceduralAsteroid from './ProceduralAsteroid'
-import Star from './Star'
-import Nebula from './Nebula'
-import OrbitalPath from './OrbitalPath'
+import ObjectGenerator from './ObjectGenerator'
 
 
 // ── Warp Speed Effect ─────────────────────────────────────────────────────
@@ -111,115 +107,6 @@ function WarpLines({ active }) {
   )
 }
 
-// ── Galaxy Renderer ────────────────────────────────────────────────────────
-function Galaxy({ params, position = [0, 0, 0] }) {
-  const groupRef = useRef()
-  const count = params?.particleCount ?? 80000
-  const arms = params?.spiralArms ?? 3
-  const radius = params?.radius ?? 7
-  const armSpin = params?.armSpin ?? 1.5
-  const armWidth = params?.armWidth ?? 0.35
-
-  const geometry = useMemo(() => {
-    const geo = new THREE.BufferGeometry()
-    const positions = new Float32Array(count * 3)
-    const colors = new Float32Array(count * 3)
-
-    const coreColor = new THREE.Color(...(params?.coreColor ?? [1, 0.85, 0.5]))
-    const diskColor = new THREE.Color(...(params?.diskColor ?? [0.55, 0.65, 0.95]))
-
-    for (let i = 0; i < count; i++) {
-      // Assign to an arm
-      const arm = Math.floor(Math.random() * arms)
-      const armAngle = (arm / arms) * Math.PI * 2
-
-      // Radial distance — concentrate near center
-      const r = Math.pow(Math.random(), 0.5) * radius
-      const spinAngle = r * armSpin
-      const scatter = (Math.random() - 0.5) * r * armWidth
-
-      const angle = armAngle + spinAngle
-      const x = (r + scatter) * Math.cos(angle) + (Math.random() - 0.5) * 0.5
-      const y = (Math.random() - 0.5) * 0.3 * (1 - r / radius) + (Math.random() - 0.5) * 0.1
-      const z = (r + scatter) * Math.sin(angle) + (Math.random() - 0.5) * 0.5
-
-      positions[i * 3] = x
-      positions[i * 3 + 1] = y
-      positions[i * 3 + 2] = z
-
-      // Color: hot core → cool disk
-      const coreBlend = Math.max(0, 1 - r / (radius * 0.3))
-      const c = diskColor.clone().lerp(coreColor, coreBlend)
-      colors[i * 3] = c.r
-      colors[i * 3 + 1] = c.g
-      colors[i * 3 + 2] = c.b
-    }
-
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-    return geo
-  }, [count, arms, radius, armSpin, armWidth, params])
-
-  useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.01
-      groupRef.current.rotation.x = params?.tiltAngle ?? 0.4
-    }
-  })
-
-  return (
-    <group ref={groupRef} position={position}>
-      <points geometry={geometry}>
-        <pointsMaterial
-          size={0.04}
-          sizeAttenuation
-          vertexColors
-          transparent
-          opacity={0.9}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
-    </group>
-  )
-}
-
-// ── Object Switcher ────────────────────────────────────────────────────────
-function CelestialObjectRenderer({ object }) {
-  const params = useProceduralGen(object)
-
-  if (!object || !params) return null
-
-  switch (object.type) {
-    case 'planet':
-    case 'exoplanet':
-      return (
-        <group>
-          <ProceduralPlanet params={params} position={[0, 0, 0]} />
-          {object.exoplanet?.semi_major_axis_au && (
-            <OrbitalPath
-              semiMajorAxis={object.exoplanet.semi_major_axis_au}
-              eccentricity={0.05}
-              scale={1.5}
-              color="#4FACFE"
-              opacity={0.2}
-            />
-          )}
-        </group>
-      )
-    case 'asteroid':
-      return <ProceduralAsteroid params={params} position={[0, 0, 0]} />
-    case 'star':
-      return <Star params={params} position={[0, 0, 0]} />
-    case 'nebula':
-      return <Nebula params={params} position={[0, 0, 0]} />
-    case 'galaxy':
-      return <Galaxy params={params} position={[0, 0, 0]} />
-    default:
-      return <ProceduralPlanet params={params} position={[0, 0, 0]} />
-  }
-}
-
 // ── Flight Camera Handler ──────────────────────────────────────────────────
 function FlightCamera() {
   const { camera } = useThree()
@@ -246,6 +133,12 @@ export default function SpaceScene() {
   const isFlying = scene === 'flying'
   const isViewing = scene === 'viewing'
 
+  // Frame the orbit camera around the procedurally-derived extent of the object
+  // (disk + jets for a black hole, rings for a giant, etc.) rather than the
+  // coarse backend type, so every object class frames sensibly.
+  const appearance = useProceduralGen(selectedObject)
+  const frameRadius = appearance?.boundingRadius ?? computeSceneRadius(selectedObject)
+
   return (
     <div className="fixed inset-0">
       <Canvas
@@ -262,10 +155,10 @@ export default function SpaceScene() {
         {/* Warp effect during flight */}
         <WarpLines active={isFlying} />
 
-        {/* The celestial object */}
+        {/* The celestial object — procedurally generated from its metadata */}
         {isViewing && selectedObject && (
           <Suspense fallback={null}>
-            <CelestialObjectRenderer object={selectedObject} />
+            <ObjectGenerator object={selectedObject} />
           </Suspense>
         )}
 
@@ -277,8 +170,8 @@ export default function SpaceScene() {
           <OrbitControls
             enableZoom={true}
             enablePan={false}
-            minDistance={computeSceneRadius(selectedObject) * 2.0}
-            maxDistance={computeSceneRadius(selectedObject) * 8}
+            minDistance={frameRadius * 1.6}
+            maxDistance={frameRadius * 6}
             autoRotate={isAutoRotating}
             autoRotateSpeed={0.3}
           />

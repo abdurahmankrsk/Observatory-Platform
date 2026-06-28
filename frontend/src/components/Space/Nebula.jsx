@@ -18,6 +18,10 @@ export default function Nebula({ params, position = [0, 0, 0] }) {
   const count = params?.particleCount ?? 70000
   const nebulaRadius = params?.radius ?? 6
   const spread = params?.spread ?? 0.7
+  const nebulaStyle = params?.nebulaStyle ?? 'emission'
+  const expanding = params?.expanding ?? false       // planetary nebula → shell
+  const absorbing = params?.absorbing ?? false       // dark nebula → light-absorbing dust
+  const shellThickness = params?.shellThickness ?? 0.3
 
   const [primary, secondary] = useMemo(() => {
     const p = params?.primaryColor ?? [0.9, 0.15, 0.2]
@@ -32,18 +36,30 @@ export default function Nebula({ params, position = [0, 0, 0] }) {
     const alpha = new Float32Array(count)
 
     for (let i = 0; i < count; i++) {
-      // Sample in an ellipsoidal volume
       let x, y, z, n
-      do {
-        x = (Math.random() - 0.5) * nebulaRadius * 2
-        y = (Math.random() - 0.5) * nebulaRadius * 1.2
-        z = (Math.random() - 0.5) * nebulaRadius * 2
-        const dist = Math.sqrt(x * x + y * y + z * z)
-        // Noise-based density falloff
-        n = noise3D(x * 0.3, y * 0.3, z * 0.3) * 0.5 + 0.5
-        const falloff = Math.max(0, 1 - dist / nebulaRadius)
-        n *= falloff * falloff
-      } while (n < Math.random() * spread)
+      if (expanding) {
+        // Planetary nebula: a thin, slightly clumpy expanding spherical shell.
+        const theta = Math.random() * Math.PI * 2
+        const phi = Math.acos(2 * Math.random() - 1)
+        const r = nebulaRadius * (1 - shellThickness + Math.random() * shellThickness * 2)
+        const dx = Math.sin(phi) * Math.cos(theta)
+        const dy = Math.cos(phi)
+        const dz = Math.sin(phi) * Math.sin(theta)
+        x = dx * r
+        y = dy * r * 0.85
+        z = dz * r
+      } else {
+        // Emission/reflection/dark: noise-shaped ellipsoidal volume.
+        do {
+          x = (Math.random() - 0.5) * nebulaRadius * 2
+          y = (Math.random() - 0.5) * nebulaRadius * 1.2
+          z = (Math.random() - 0.5) * nebulaRadius * 2
+          const dist = Math.sqrt(x * x + y * y + z * z)
+          n = noise3D(x * 0.3, y * 0.3, z * 0.3) * 0.5 + 0.5
+          const falloff = Math.max(0, 1 - dist / nebulaRadius)
+          n *= falloff * falloff
+        } while (n < Math.random() * spread)
+      }
 
       pos[i * 3] = x
       pos[i * 3 + 1] = y
@@ -54,7 +70,7 @@ export default function Nebula({ params, position = [0, 0, 0] }) {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
     geo.setAttribute('alpha', new THREE.BufferAttribute(alpha, 1))
     return geo
-  }, [count, nebulaRadius, spread])
+  }, [count, nebulaRadius, spread, expanding, shellThickness])
 
   // Layer 2 — sparse outer wisps (secondary color)
   const wispCount = Math.floor(count * 0.3)
@@ -90,17 +106,21 @@ export default function Nebula({ params, position = [0, 0, 0] }) {
     }
   })
 
+  // Dark nebulae absorb starlight rather than emit it: use normal blending and
+  // higher opacity so the dust reads as an opaque silhouette, not a glow.
+  const blendMode = absorbing ? THREE.NormalBlending : THREE.AdditiveBlending
+
   return (
     <group ref={groupRef} position={position}>
       {/* Primary nebula cloud */}
       <points ref={points1Ref} geometry={geo1}>
         <pointsMaterial
           color={primary}
-          size={0.06}
+          size={absorbing ? 0.12 : 0.06}
           sizeAttenuation
           transparent
-          opacity={0.45}
-          blending={THREE.AdditiveBlending}
+          opacity={absorbing ? 0.8 : 0.45}
+          blending={blendMode}
           depthWrite={false}
         />
       </points>
@@ -112,19 +132,21 @@ export default function Nebula({ params, position = [0, 0, 0] }) {
           size={0.1}
           sizeAttenuation
           transparent
-          opacity={0.25}
-          blending={THREE.AdditiveBlending}
+          opacity={absorbing ? 0.5 : 0.25}
+          blending={blendMode}
           depthWrite={false}
         />
       </points>
 
-      {/* Central glow light */}
-      <pointLight
-        color={primary}
-        intensity={0.8}
-        distance={nebulaRadius * 2}
-        decay={1}
-      />
+      {/* Central glow light — emissive nebulae only */}
+      {!absorbing && (
+        <pointLight
+          color={primary}
+          intensity={nebulaStyle === 'planetary' ? 1.2 : 0.8}
+          distance={nebulaRadius * 2}
+          decay={1}
+        />
+      )}
     </group>
   )
 }
