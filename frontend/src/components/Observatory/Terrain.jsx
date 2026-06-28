@@ -8,7 +8,38 @@
  */
 import React, { useMemo } from 'react'
 import * as THREE from 'three'
-import { generateNoiseTexture } from '../../utils/proceduralTextures'
+
+// ── Canvas textures (colour + relief) ───────────────────────────────────────
+function makeGrassTexture() {
+  const s = 256
+  const cv = document.createElement('canvas'); cv.width = cv.height = s
+  const x = cv.getContext('2d')
+  x.fillStyle = '#223c27'; x.fillRect(0, 0, s, s)
+  for (let i = 0; i < 150; i++) {              // soft darker/lighter patches
+    const g = 40 + Math.random() * 70
+    x.fillStyle = `rgba(${g * 0.55},${g},${g * 0.6},0.22)`
+    x.beginPath(); x.arc(Math.random() * s, Math.random() * s, 8 + Math.random() * 40, 0, 7); x.fill()
+  }
+  for (let i = 0; i < 6000; i++) {             // blade speckle
+    const g = 55 + Math.random() * 130
+    x.fillStyle = `rgba(${g * 0.5},${g},${g * 0.55},${0.25 + Math.random() * 0.5})`
+    x.fillRect(Math.random() * s, Math.random() * s, 1, 2 + Math.random() * 4)
+  }
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t
+}
+function makeDirtTexture() {
+  const s = 256
+  const cv = document.createElement('canvas'); cv.width = cv.height = s
+  const x = cv.getContext('2d')
+  x.fillStyle = '#3a3026'; x.fillRect(0, 0, s, s)
+  for (let i = 0; i < 1400; i++) {             // pebbles / gravel
+    const g = 50 + Math.random() * 90
+    x.fillStyle = `rgba(${g},${g * 0.92},${g * 0.78},${0.3 + Math.random() * 0.5})`
+    const r = 1 + Math.random() * 3.5
+    x.beginPath(); x.arc(Math.random() * s, Math.random() * s, r, 0, 7); x.fill()
+  }
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t
+}
 
 // Deterministic PRNG so the scatter is identical every render.
 function makeRng(seed) {
@@ -49,36 +80,16 @@ function onPath(x, z) {
 }
 
 export default function Terrain() {
-  // Tiled noise used as a bump map to give the grass & dirt surface texture.
-  const grassBump = useMemo(() => {
-    const t = generateNoiseTexture(256, 11)
-    t.repeat.set(34, 34)
-    return t
-  }, [])
-  const dirtBump = useMemo(() => {
-    const t = generateNoiseTexture(256, 73)
-    t.repeat.set(3, 26)
-    return t
-  }, [])
+  // Tiled canvas textures (used as colour map + bump for surface relief).
+  const grassTex = useMemo(() => { const t = makeGrassTexture(); t.repeat.set(20, 20); return t }, [])
+  const dirtTex  = useMemo(() => { const t = makeDirtTexture();  t.repeat.set(1.6, 13); return t }, [])
 
-  // ── Ground (displaced + per-vertex colour variation: patchy grass + dirt) ──
+  // ── Ground (displaced hilltop) ──
   const groundGeo = useMemo(() => {
     const g = new THREE.PlaneGeometry(340, 340, 150, 150)
     g.rotateX(-Math.PI / 2)
     const p = g.attributes.position
-    const col = new Float32Array(p.count * 3)
-    const c = new THREE.Color()
-    for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i), z = p.getZ(i)
-      p.setY(i, groundHeight(x, z))
-      // patchy green: low-freq patches + fine speckle
-      const patch = 0.5 + 0.5 * Math.sin(x * 0.07 + 1.3) * Math.cos(z * 0.063)
-      const fine = 0.5 + 0.5 * Math.sin(x * 0.9) * Math.sin(z * 0.8)
-      const lum = 0.12 + patch * 0.10 + fine * 0.03
-      c.setHSL(0.30 + patch * 0.05, 0.42 - fine * 0.1, lum)
-      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b
-    }
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3))
+    for (let i = 0; i < p.count; i++) p.setY(i, groundHeight(p.getX(i), p.getZ(i)))
     g.computeVertexNormals()
     return g
   }, [])
@@ -160,20 +171,12 @@ export default function Terrain() {
     g.rotateX(-Math.PI / 2)
     const cz = (PATH_Z0 + PATH_Z1) / 2
     const p = g.attributes.position
-    const col = new Float32Array(p.count * 3)
-    const c = new THREE.Color()
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i)
       const z = p.getZ(i) + cz
       p.setZ(i, z)
       p.setY(i, groundHeight(x, z) + 0.04)
-      // speckled gravel colour
-      const sp = 0.5 + 0.5 * Math.sin(x * 5.1 + z * 4.3) * Math.cos(z * 3.7 - x * 2.9)
-      const v = 0.14 + sp * 0.12
-      c.setRGB(v * 1.05, v, v * 0.85)            // warm dirt/gravel
-      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b
     }
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3))
     g.computeVertexNormals()
     return g
   }, [])
@@ -184,10 +187,10 @@ export default function Terrain() {
       <directionalLight position={[-30, 40, 25]} intensity={1.4} color="#9DB4D8" />
 
       <mesh geometry={groundGeo} receiveShadow>
-        <meshStandardMaterial vertexColors roughness={1} metalness={0} bumpMap={grassBump} bumpScale={0.25} />
+        <meshStandardMaterial map={grassTex} bumpMap={grassTex} bumpScale={0.5} roughness={1} metalness={0} />
       </mesh>
       <mesh geometry={pathGeo}>
-        <meshStandardMaterial vertexColors roughness={1} metalness={0} bumpMap={dirtBump} bumpScale={0.35} />
+        <meshStandardMaterial map={dirtTex} bumpMap={dirtTex} bumpScale={0.6} roughness={1} metalness={0} />
       </mesh>
       <primitive object={rocks} />
       <primitive object={grass} />

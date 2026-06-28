@@ -50,6 +50,16 @@ function makeSlottedBand(R, w, thetaStart, thetaSegs, phiSegs) {
   return g
 }
 
+// Horizontal latitude band that covers only the CLOSED arc — the gap is baked
+// to the front (+Z) so the band never crosses the slit.
+function makeLatRing(ringR, tube, phiW) {
+  const arc = Math.PI * 2 - 2 * phiW
+  const g = new THREE.TorusGeometry(ringR, tube, 6, 84, arc)
+  g.rotateZ(Math.PI / 2 + phiW)   // centre the gap on the front meridian
+  g.rotateX(Math.PI / 2)          // lay flat
+  return g
+}
+
 export default function Dome({ radius = 8 }) {
   const domeRef = useRef()
   const telescopeRA = useObservatoryStore((s) => s.telescopeRA)
@@ -76,6 +86,40 @@ export default function Dome({ radius = 8 }) {
   const matOuter = { color: '#1E3248', metalness: 0.7, roughness: 0.3 }
   const matInner = { color: '#0D1C2C', metalness: 0.3, roughness: 0.78 }
 
+  // ── Structural detail (all inside domeRef so it tracks the dome; all kept off
+  //    the front slit so it never blocks the telescope) ──
+  const ribAngles = [60, 100, 140, 180, 220, 260, 300].map((d) => (d * Math.PI) / 180)
+  const ribOut = useMemo(() => new THREE.TorusGeometry(radius + 0.05, 0.06, 6, 40, 1.1), [radius])
+  const ribIn  = useMemo(() => new THREE.TorusGeometry(radius - 0.12, 0.05, 6, 40, 1.1), [radius])
+
+  // Latitude bands (gap baked to the front so they skip the slit)
+  const bands = useMemo(() =>
+    [0.26, 0.5, 0.72].map((t) => {
+      const theta = (1 - t) * Math.PI / 2
+      const ringR = radius * Math.sin(theta)
+      const phiW = Math.asin(Math.min(0.96, slotHalf / ringR)) + 0.1
+      return { geo: makeLatRing(ringR, 0.055, phiW), y: radius * Math.cos(theta) }
+    }), [radius])
+
+  // Bolts/rivets around the base (skipping the doorway-side slit)
+  const bolts = useMemo(() => {
+    const mesh = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.085, 8, 6),
+      new THREE.MeshStandardMaterial({ color: '#8AAFCC', metalness: 0.9, roughness: 0.2 }), 32)
+    const d = new THREE.Object3D()
+    let n = 0
+    for (let deg = 40; deg <= 320; deg += 18) {
+      const a = (deg * Math.PI) / 180
+      const rr = radius - 0.04
+      d.position.set(rr * Math.sin(a), 0.18, rr * Math.cos(a))
+      d.updateMatrix()
+      mesh.setMatrixAt(n++, d.matrix)
+    }
+    mesh.count = n
+    mesh.instanceMatrix.needsUpdate = true
+    return mesh
+  }, [radius])
+
   return (
     <group rotation={[0, Math.PI, 0]}>
       <group ref={domeRef}>
@@ -97,6 +141,28 @@ export default function Dome({ radius = 8 }) {
 
         {/* Soft light spilling in through the slot */}
         <pointLight position={[0, radius * 0.5, radius * 0.5]} color="#4488BB" intensity={0.8} distance={7} decay={2} />
+
+        {/* ── Vertical structural ribs (outer + inner), off the slit ── */}
+        {ribAngles.map((a, i) => (
+          <group key={`rib-${i}`}>
+            <mesh geometry={ribOut} rotation={[0, -Math.PI / 2 + a, 0]}>
+              <meshStandardMaterial color="#26405A" metalness={0.78} roughness={0.26} />
+            </mesh>
+            <mesh geometry={ribIn} rotation={[0, -Math.PI / 2 + a, 0]}>
+              <meshStandardMaterial color="#1A2E40" metalness={0.5} roughness={0.5} />
+            </mesh>
+          </group>
+        ))}
+
+        {/* ── Latitude bands (gapped at the front so they skip the slit) ── */}
+        {bands.map((b, i) => (
+          <mesh key={`band-${i}`} geometry={b.geo} position={[0, b.y, 0]}>
+            <meshStandardMaterial color="#2E4A66" metalness={0.8} roughness={0.24} />
+          </mesh>
+        ))}
+
+        {/* ── Rivets around the base ── */}
+        <primitive object={bolts} />
 
         {/* ── Base rim ring (rotates with the dome) ── */}
         <mesh position={[0, 0.04, 0]} rotation={[Math.PI / 2, 0, 0]}>
