@@ -6,6 +6,7 @@
 import React, { useEffect, useRef } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
+import { useProceduralGen } from '../../hooks/useProceduralGen'
 import { formatDistance } from '../../utils/astronomyMath'
 import { isInHabitableZone } from '../../utils/colorFromTemperature'
 import { getSpectralClass } from '../../utils/colorFromTemperature'
@@ -97,6 +98,8 @@ export default function InfoPanel() {
   const beginFlight = useObservatoryStore((s) => s.beginFlight)
   const returnToObservatory = useObservatoryStore((s) => s.returnToObservatory)
   const scene = useObservatoryStore((s) => s.scene)
+  // Precise classified type (e.g. "Black Hole", "Pulsar") for the badge label.
+  const appearance = useProceduralGen(selectedObject)
 
   const isTargeting = scene === 'targeting'
   const isViewing = scene === 'viewing'
@@ -120,6 +123,9 @@ export default function InfoPanel() {
   // so the panel degrades gracefully instead of crashing the app.
   const objType = selectedObject.type || 'unknown'
   const badgeClass = `badge badge--${objType}`
+  // Show the fine classified type (Black Hole, Pulsar, Spiral Galaxy…) but keep
+  // the badge colour keyed to the coarse type (the CSS classes are per coarse type).
+  const badgeText = (appearance?.typeLabel || objType).toUpperCase()
 
   return (
     <div
@@ -142,7 +148,7 @@ export default function InfoPanel() {
     >
       {/* Object type badge */}
       <div style={{ marginBottom: 12 }}>
-        <span className={badgeClass}>{objType.toUpperCase()}</span>
+        <span className={badgeClass}>{badgeText}</span>
       </div>
 
       {/* Object name */}
