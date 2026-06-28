@@ -119,7 +119,7 @@ export default function SearchPanel() {
             autoComplete="off"
           />
           {searchMutation.isPending && (
-            <div className="spinner" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }} />
+            <div className="spinner" style={{ position: 'absolute', right: 10, top: 'calc(50% - 12px)' }} />
           )}
         </div>
       </div>

@@ -144,6 +144,46 @@ KNOWN_OBJECTS: Dict[str, CelestialObject] = {
         description="An open star cluster in Taurus, also known as the Seven Sisters, visible to the naked eye.",
         fun_fact="The Pleiades are only about 100 million years old — extremely young by cosmic standards.",
     ),
+    "sombrero galaxy": CelestialObject(
+        id="sombrero_galaxy",
+        name="Sombrero Galaxy (M104)",
+        type="galaxy",
+        ra=189.9976,
+        dec=-11.6231,
+        distance_ly=29350000,
+        description="A spiral galaxy in Virgo seen nearly edge-on, with a bright bulge and a dramatic dark dust lane that give it the look of a sombrero hat.",
+        fun_fact="The Sombrero Galaxy hosts a supermassive black hole of about one billion solar masses at its center — one of the most massive yet measured in a nearby galaxy.",
+    ),
+    "whirlpool galaxy": CelestialObject(
+        id="whirlpool_galaxy",
+        name="Whirlpool Galaxy (M51)",
+        type="galaxy",
+        ra=202.4696,
+        dec=47.1952,
+        distance_ly=23000000,
+        description="A grand-design spiral galaxy in Canes Venatici, interacting with its smaller companion galaxy NGC 5195.",
+        fun_fact="The Whirlpool was the first galaxy recognized to have a spiral structure, sketched by Lord Rosse in 1845.",
+    ),
+    "triangulum galaxy": CelestialObject(
+        id="triangulum_galaxy",
+        name="Triangulum Galaxy (M33)",
+        type="galaxy",
+        ra=23.4621,
+        dec=30.6602,
+        distance_ly=2730000,
+        description="The third-largest galaxy in the Local Group, a spiral galaxy in the constellation Triangulum.",
+        fun_fact="Under very dark skies, the Triangulum Galaxy is one of the most distant objects visible to the naked eye.",
+    ),
+    "pinwheel galaxy": CelestialObject(
+        id="pinwheel_galaxy",
+        name="Pinwheel Galaxy (M101)",
+        type="galaxy",
+        ra=210.8025,
+        dec=54.3491,
+        distance_ly=20870000,
+        description="A face-on spiral galaxy in Ursa Major, notable for its prominent and well-defined spiral arms.",
+        fun_fact="The Pinwheel Galaxy is nearly twice the diameter of the Milky Way, spanning about 170,000 light-years.",
+    ),
 }
 
 # Solar system objects (approximate current positions, RA/Dec will be simulated)
@@ -206,25 +246,46 @@ async def search_simbad(query: str) -> Optional[CelestialObject]:
     if cached is not None:
         return cached
 
-    # SIMBAD TAP query
-    adql_query = f"""
-        SELECT TOP 1
-            main_id, otype, ra, dec,
-            plx_value,
-            sp_type
-        FROM basic
-        JOIN ident ON ident.oidref = basic.oid
-        WHERE LOWER(ident.id) LIKE '%{query_lower}%'
-        ORDER BY main_id
-    """
+    # SIMBAD's ADQL has no LOWER()/UPPER()/ILIKE (they 400), but its `ident`
+    # matching already ignores case and internal spacing. So we normalise the
+    # user's text to a single-spaced, uppercased catalogue form and match the
+    # identifier directly — escaping quotes so a name like "O'Brien" can't break
+    # the query. An exact match resolves the object itself (e.g. "ngc 253" → the
+    # galaxy, not a sub-source); a prefix match is the fallback for partial typing.
+    norm = " ".join(query.upper().split()).replace("'", "''")
 
+    result = await _query_simbad(
+        f"""
+        SELECT TOP 1 main_id, otype, ra, dec, plx_value, sp_type, nbref
+        FROM basic JOIN ident ON ident.oidref = basic.oid
+        WHERE ident.id = '{norm}'
+        """,
+        fallback_name=query,
+    )
+    if result is None:
+        result = await _query_simbad(
+            f"""
+            SELECT TOP 1 main_id, otype, ra, dec, plx_value, sp_type, nbref
+            FROM basic JOIN ident ON ident.oidref = basic.oid
+            WHERE ident.id LIKE '{norm}%'
+            ORDER BY nbref DESC
+            """,
+            fallback_name=query,
+        )
+
+    if result is not None:
+        _set_cached(cache_key, result)
+    return result
+
+
+async def _query_simbad(adql_query: str, fallback_name: str) -> Optional[CelestialObject]:
+    """Run an ADQL query against the SIMBAD TAP service and parse its first row."""
     params = {
         "REQUEST": "doQuery",
         "LANG": "ADQL",
         "QUERY": adql_query,
         "FORMAT": "json",
     }
-
     async with httpx.AsyncClient(timeout=20.0) as client:
         try:
             resp = await client.get(SIMBAD_TAP, params=params)
@@ -233,11 +294,7 @@ async def search_simbad(query: str) -> Optional[CelestialObject]:
             data = resp.json()
         except Exception:
             return None
-
-    result = _parse_simbad_rows(data, fallback_name=query)
-    if result is not None:
-        _set_cached(cache_key, result)
-    return result
+    return _parse_simbad_rows(data, fallback_name=fallback_name)
 
 
 def _parse_simbad_rows(data: Dict[str, Any], fallback_name: str) -> Optional[CelestialObject]:
@@ -259,6 +316,11 @@ def _parse_simbad_rows(data: Dict[str, Any], fallback_name: str) -> Optional[Cel
 
     row = rows[0]
     main_id = get_val(row, "main_id") or fallback_name
+    main_id = " ".join(str(main_id).split())  # collapse SIMBAD padding, e.g. "M  31"
+    # Drop SIMBAD's "NAME " common-name marker for display, e.g.
+    # "NAME 30 Dor Nebula" → "30 Dor Nebula".
+    if main_id.upper().startswith("NAME "):
+        main_id = main_id[5:]
     otype = get_val(row, "otype") or "star"
     ra = get_val(row, "ra")
     dec = get_val(row, "dec")
@@ -281,10 +343,12 @@ async def identify_by_coordinates(
     ra: float, dec: float, radius_deg: float = 0.1
 ) -> Optional[CelestialObject]:
     """
-    Find the catalogued object nearest the given sky coordinates via a SIMBAD
-    cone search. Returns the closest match, or None if nothing is catalogued
-    within the radius. CIRCLE/CONTAINS use true spherical geometry, so RA
-    wraparound at 0/360 and the celestial poles are handled correctly.
+    Identify the most notable catalogued object near the given sky coordinates
+    via a SIMBAD cone search. Ranks by reference count (nbref) so a famous
+    object (e.g. M 31) wins over the anonymous point sources that crowd its
+    center, with angular distance as the tiebreaker. Returns None if nothing is
+    catalogued within the radius. CIRCLE/CONTAINS use true spherical geometry,
+    so RA wraparound at 0/360 and the celestial poles are handled correctly.
     """
     cache_key = f"identify:{round(ra, 3)}:{round(dec, 3)}:{radius_deg}"
     cached = _get_cached(cache_key)
@@ -293,12 +357,12 @@ async def identify_by_coordinates(
 
     adql_query = f"""
         SELECT TOP 5
-            main_id, otype, ra, dec, plx_value, sp_type,
+            main_id, otype, ra, dec, plx_value, sp_type, nbref,
             DISTANCE(POINT('ICRS', ra, dec), POINT('ICRS', {ra}, {dec})) AS sep
         FROM basic
         WHERE CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', {ra}, {dec}, {radius_deg})) = 1
           AND ra IS NOT NULL
-        ORDER BY sep ASC
+        ORDER BY nbref DESC, sep ASC
     """
 
     params = {
@@ -308,9 +372,9 @@ async def identify_by_coordinates(
         "FORMAT": "json",
     }
 
-    # Cone searches are fast; keep the timeout below the frontend's so it fails
-    # fast rather than letting the client give up first.
-    async with httpx.AsyncClient(timeout=12.0) as client:
+    # SIMBAD can be slow under load; allow up to 20s (still below the frontend's
+    # 25s request timeout, so the client doesn't give up first).
+    async with httpx.AsyncClient(timeout=20.0) as client:
         try:
             resp = await client.get(SIMBAD_TAP, params=params)
             if resp.status_code != 200:
@@ -325,17 +389,37 @@ async def identify_by_coordinates(
     return result
 
 
+# SIMBAD condensed object-type codes grouped into our three visual buckets.
+# (otype_txt returns the same condensed code, so we map the codes directly.)
+_GALAXY_OTYPES = {
+    "G", "AGN", "SyG", "Sy1", "Sy2", "rG", "LIN", "QSO", "Bla", "BLL",
+    "GiG", "GiC", "GiP", "BiC", "ClG", "GrG", "CGG", "PaG", "IG", "SCG",
+    "EmG", "SBG", "H2G", "LSB", "bCG", "GlG", "Q?", "AG?",
+}
+_NEBULA_OTYPES = {
+    "ISM", "Cld", "GNe", "BNe", "DNe", "RNe", "MoC", "HII", "SNR", "SR?",
+    "PN", "PN?", "EmO", "HH", "sh", "cor", "bub", "SFR", "glb", "CGb",
+    "HVC", "out", "flt", "cmb",
+    # Star clusters render as nebula-like blobs in this app:
+    "Cl*", "GlC", "OpC", "As*", "Cl?", "St*", "MGr",
+}
+
+
 def _map_simbad_type(simbad_type: str) -> str:
-    """Map SIMBAD object type codes to our simplified types."""
+    """Map a SIMBAD object-type code to one of our visual types: star/nebula/galaxy."""
     if not simbad_type:
         return "star"
-    t = simbad_type.lower()
-    if any(x in t for x in ["galaxy", "g ", "gal", "agn", "qso"]):
+    code = simbad_type.strip()
+    if code in _GALAXY_OTYPES:
         return "galaxy"
-    if any(x in t for x in ["nebula", "neb", "snr", "pn", "ism"]):
+    if code in _NEBULA_OTYPES:
         return "nebula"
-    if any(x in t for x in ["star cluster", "cl ", "association"]):
-        return "nebula"  # treat as nebula-like for visual
+    # Fallback substring match — handles long-form labels and code variants.
+    t = code.lower()
+    if any(x in t for x in ["galax", "agn", "quasar", "qso"]):
+        return "galaxy"
+    if any(x in t for x in ["nebula", "cluster", "snr", "ism", "hii"]):
+        return "nebula"
     return "star"
 
 
