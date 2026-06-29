@@ -195,6 +195,64 @@ const bs = {
 export const translations = { en, bs }
 
 /**
+ * Object-type labels for badges. Keyed by BOTH the coarse backend type
+ * (lowercase: 'planet', 'star', 'galaxy'…) used by SearchPanel and the fine
+ * CelestialType enum value (PascalCase: 'BlackHole', 'SpiralGalaxy'…) emitted by
+ * the classifier and shown on the InfoPanel badge. `.badge` CSS uppercases these.
+ */
+const typeLabels = {
+  en: {
+    // coarse (backend)
+    planet: 'Planet', exoplanet: 'Exoplanet', moon: 'Moon', asteroid: 'Asteroid',
+    comet: 'Comet', star: 'Star', blackhole: 'Black Hole', nebula: 'Nebula',
+    galaxy: 'Galaxy', unknown: 'Unknown',
+    // fine (CelestialType)
+    Planet: 'Planet', Exoplanet: 'Exoplanet', Moon: 'Moon', Asteroid: 'Asteroid', Comet: 'Comet',
+    Star: 'Star', MainSequenceStar: 'Main Sequence Star', RedGiant: 'Red Giant',
+    RedSupergiant: 'Red Supergiant', BlueGiant: 'Blue Giant', WhiteDwarf: 'White Dwarf',
+    BrownDwarf: 'Brown Dwarf', NeutronStar: 'Neutron Star', Pulsar: 'Pulsar', Magnetar: 'Magnetar',
+    BlackHole: 'Black Hole', Protostar: 'Protostar',
+    Galaxy: 'Galaxy', SpiralGalaxy: 'Spiral Galaxy', EllipticalGalaxy: 'Elliptical Galaxy',
+    IrregularGalaxy: 'Irregular Galaxy',
+    Nebula: 'Nebula', PlanetaryNebula: 'Planetary Nebula', EmissionNebula: 'Emission Nebula',
+    ReflectionNebula: 'Reflection Nebula', DarkNebula: 'Dark Nebula',
+    GlobularCluster: 'Globular Cluster', OpenCluster: 'Open Cluster',
+    SupernovaRemnant: 'Supernova Remnant', Quasar: 'Quasar', BinaryStar: 'Binary Star',
+    Unknown: 'Unknown',
+  },
+  bs: {
+    // coarse (backend)
+    planet: 'Planeta', exoplanet: 'Egzoplaneta', moon: 'Mjesec', asteroid: 'Asteroid',
+    comet: 'Komet', star: 'Zvijezda', blackhole: 'Crna rupa', nebula: 'Maglica',
+    galaxy: 'Galaksija', unknown: 'Nepoznato',
+    // fine (CelestialType)
+    Planet: 'Planeta', Exoplanet: 'Egzoplaneta', Moon: 'Mjesec', Asteroid: 'Asteroid', Comet: 'Komet',
+    Star: 'Zvijezda', MainSequenceStar: 'Zvijezda glavnog niza', RedGiant: 'Crveni div',
+    RedSupergiant: 'Crveni superdiv', BlueGiant: 'Plavi div', WhiteDwarf: 'Bijeli patuljak',
+    BrownDwarf: 'Smeđi patuljak', NeutronStar: 'Neutronska zvijezda', Pulsar: 'Pulsar', Magnetar: 'Magnetar',
+    BlackHole: 'Crna rupa', Protostar: 'Protozvijezda',
+    Galaxy: 'Galaksija', SpiralGalaxy: 'Spiralna galaksija', EllipticalGalaxy: 'Eliptična galaksija',
+    IrregularGalaxy: 'Nepravilna galaksija',
+    Nebula: 'Maglica', PlanetaryNebula: 'Planetarna maglica', EmissionNebula: 'Emisiona maglica',
+    ReflectionNebula: 'Refleksiona maglica', DarkNebula: 'Tamna maglica',
+    GlobularCluster: 'Globularno jato', OpenCluster: 'Otvoreno jato',
+    SupernovaRemnant: 'Ostatak supernove', Quasar: 'Kvazar', BinaryStar: 'Dvojna zvijezda',
+    Unknown: 'Nepoznato',
+  },
+}
+
+/**
+ * Translate a celestial-object type to a display label.
+ * Accepts coarse ('planet') or fine ('SpiralGalaxy') types. Falls back to a
+ * PascalCase-split of the raw value so an unmapped type still reads cleanly.
+ */
+export function translateType(lang, type) {
+  if (!type) return (typeLabels[lang] || typeLabels.en).unknown
+  const dict = typeLabels[lang] || typeLabels.en
+  return dict[type] || typeLabels.en[type] || String(type).replace(/([a-z])([A-Z])/g, '$1 $2')
+}
+
+/**
  * Resolve a key for a given language with {var} interpolation.
  * Falls back to English, then to the raw key, so a missing string is never fatal.
  */
@@ -216,5 +274,6 @@ export function translate(lang, key, vars) {
 export function useTranslation() {
   const lang = useObservatoryStore((s) => s.language)
   const t = (key, vars) => translate(lang, key, vars)
-  return { t, lang }
+  const tType = (type) => translateType(lang, type)
+  return { t, tType, lang }
 }

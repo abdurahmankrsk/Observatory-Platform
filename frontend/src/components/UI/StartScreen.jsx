@@ -153,8 +153,9 @@ export default function StartScreen() {
           <br />{t('start.subtitle2')}
         </p>
 
-        {/* Actions Container */}
-        <div ref={btnRef} style={{ opacity: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+        {/* Actions Container — raised above the decorative coordinates line below
+            so the (downward-opening) language dropdown stays clickable. */}
+        <div ref={btnRef} style={{ opacity: 0, position: 'relative', zIndex: 30, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
           {/* ENTER button */}
           <button
             id="enter-observatory-btn"
@@ -225,10 +226,11 @@ export default function StartScreen() {
           </div>
         </div>
 
-        {/* Bottom coordinates decoration */}
+        {/* Bottom coordinates decoration — purely decorative, never intercept
+            clicks meant for the language dropdown that can overlap it. */}
         <p
           className="text-label"
-          style={{ marginTop: 48, opacity: 0.3, fontSize: '0.6rem' }}
+          style={{ marginTop: 48, opacity: 0.3, fontSize: '0.6rem', pointerEvents: 'none' }}
         >
           RA 00h 00m 00s · DEC +00° 00′ 00″ · EPOCH J2000.0
         </p>

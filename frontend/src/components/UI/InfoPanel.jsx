@@ -95,7 +95,7 @@ function AsteroidInfo({ data, approach, t }) {
 
 export default function InfoPanel() {
   const panelRef = useRef()
-  const { t } = useTranslation()
+  const { t, tType } = useTranslation()
   const selectedObject = useObservatoryStore((s) => s.selectedObject)
   const beginFlight = useObservatoryStore((s) => s.beginFlight)
   const returnToObservatory = useObservatoryStore((s) => s.returnToObservatory)
@@ -125,9 +125,10 @@ export default function InfoPanel() {
   // so the panel degrades gracefully instead of crashing the app.
   const objType = selectedObject.type || 'unknown'
   const badgeClass = `badge badge--${objType}`
-  // Show the fine classified type (Black Hole, Pulsar, Spiral Galaxy…) but keep
-  // the badge colour keyed to the coarse type (the CSS classes are per coarse type).
-  const badgeText = (appearance?.typeLabel || objType).toUpperCase()
+  // Show the fine classified type (Black Hole, Pulsar, Spiral Galaxy…) translated
+  // to the active language, but keep the badge colour keyed to the coarse type
+  // (the CSS classes are per coarse type). `.badge` CSS uppercases the text.
+  const badgeText = tType(appearance?.celestialType || objType)
 
   return (
     <div

@@ -22,7 +22,7 @@ const TYPE_ICONS = {
   galaxy: '🌠',
 }
 
-function ObjectCard({ obj, onClick }) {
+function ObjectCard({ obj, onClick, tType }) {
   const badgeClass = `badge badge--${obj.type}`
   return (
     <button
@@ -42,7 +42,7 @@ function ObjectCard({ obj, onClick }) {
       <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8125rem', color: 'var(--color-star)' }}>
         {obj.name}
       </span>
-      <span className={badgeClass}>{obj.type}</span>
+      <span className={badgeClass}>{tType(obj.type)}</span>
     </button>
   )
 }
@@ -52,7 +52,7 @@ export default function SearchPanel() {
   const abortRef = useRef(null)
   const [query, setQuery] = useState('')
   const [hasSearched, setHasSearched] = useState(false)
-  const { t } = useTranslation()
+  const { t, tType } = useTranslation()
 
   const targetObject = useObservatoryStore((s) => s.targetObject)
   const searchResults = useObservatoryStore((s) => s.searchResults)
@@ -190,7 +190,7 @@ export default function SearchPanel() {
           </p>
         )}
         {displayItems.map((obj) => (
-          <ObjectCard key={obj.id} obj={obj} onClick={handleSelect} />
+          <ObjectCard key={obj.id} obj={obj} onClick={handleSelect} tType={tType} />
         ))}
       </div>
 
