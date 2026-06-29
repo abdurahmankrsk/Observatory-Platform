@@ -179,67 +179,87 @@ export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
   const tilt = params?.diskTilt ?? 0.5
 
   return (
-    <group position={position} rotation={[tilt, 0, 0]}>
-      {/* Event horizon — pure matte black sphere. No surface glow or rim shader;
-          the photon ring below handles the silhouette highlight. */}
-      <mesh>
-        <sphereGeometry args={[r, 64, 64]} />
-        <meshBasicMaterial color="#000000" />
-      </mesh>
-
-      {/* Photon ring — a camera-facing thin ring sitting just outside the
-          event horizon. useFrame keeps it billboard-oriented so it always
-          traces the horizon silhouette regardless of camera angle. */}
+    <group position={position}>
+      {/* Photon ring / event-horizon glow — OUTSIDE the tilted disk group so
+          the billboard quaternion copy from useFrame isn't double-transformed
+          by the disk tilt. Sits at the equator of the black sphere. */}
       <mesh ref={photonRingRef}>
-        <ringGeometry args={[r * 1.01, r * 1.12, 128]} />
-        <meshBasicMaterial
-          color={new THREE.Color(0.85, 0.93, 1.0)}
+        <ringGeometry args={[r * 1.0, r * 1.055, 192]} />
+        <shaderMaterial
+          vertexShader={`
+            varying vec2 vUv;
+            void main() {
+              vUv = uv;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }`}
+          fragmentShader={`
+            varying vec2 vUv;
+            void main() {
+              float t = vUv.x;
+              float glow = pow(1.0 - t, 2.5);
+              vec3 col = mix(vec3(0.9, 0.96, 1.0), vec3(0.55, 0.75, 1.0), t);
+              gl_FragColor = vec4(col * glow, glow * 0.7);
+            }`}
           transparent
-          opacity={0.55}
           side={THREE.DoubleSide}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
         />
       </mesh>
 
-      {/* Accretion disk (lies in the XZ plane) */}
-      {params?.accretionDisk !== false && (
-        <mesh ref={diskRef} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[params?.diskInner ?? r * 1.6, params?.diskOuter ?? r * 4.5, 128, 8]} />
-          <shaderMaterial
-            vertexShader={diskVertex}
-            fragmentShader={diskFragment}
-            uniforms={diskUniforms}
-            transparent
-            side={THREE.DoubleSide}
+      <group rotation={[tilt, 0, 0]}>
+        {/* Event horizon — pure matte black sphere. depthWrite={false} so it
+            doesn't occlude the Stars background at any camera angle. renderOrder
+            is kept at default (0); transparent objects with depthWrite=false
+            always composite on top of what's already in the color buffer. */}
+        <mesh renderOrder={1}>
+          <sphereGeometry args={[r, 64, 64]} />
+          <meshBasicMaterial
+            color="#000000"
             depthWrite={false}
-            blending={THREE.AdditiveBlending}
+            renderOrder={1}
           />
         </mesh>
-      )}
 
-      {/* Infalling particles */}
-      {params?.particleEffects && (
-        <points ref={particlesRef} geometry={particleGeo}>
-          <pointsMaterial
-            color={params?.diskMidColor ?? new THREE.Color(1, 0.6, 0.2)}
-            size={2.0}
-            sizeAttenuation={false}
-            transparent
-            opacity={0.3}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </points>
-      )}
+        {/* Accretion disk (lies in the XZ plane) */}
+        {params?.accretionDisk !== false && (
+          <mesh ref={diskRef} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[params?.diskInner ?? r * 1.6, params?.diskOuter ?? r * 4.5, 128, 8]} />
+            <shaderMaterial
+              vertexShader={diskVertex}
+              fragmentShader={diskFragment}
+              uniforms={diskUniforms}
+              transparent
+              side={THREE.DoubleSide}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
+            />
+          </mesh>
+        )}
 
-      {/* Relativistic jets */}
-      {params?.jets && (
-        <>
-          <Jet params={params} dir={1} />
-          <Jet params={params} dir={-1} />
-        </>
-      )}
+        {/* Infalling particles */}
+        {params?.particleEffects && (
+          <points ref={particlesRef} geometry={particleGeo}>
+            <pointsMaterial
+              color={params?.diskMidColor ?? new THREE.Color(1, 0.6, 0.2)}
+              size={2.0}
+              sizeAttenuation={false}
+              transparent
+              opacity={0.3}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+            />
+          </points>
+        )}
+
+        {/* Relativistic jets */}
+        {params?.jets && (
+          <>
+            <Jet params={params} dir={1} />
+            <Jet params={params} dir={-1} />
+          </>
+        )}
+      </group>
     </group>
   )
 }

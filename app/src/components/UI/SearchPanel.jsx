@@ -28,12 +28,14 @@ const TYPE_ICONS = {
 
 function ObjectCard({ obj, onClick, tType, saved, onToggleSave, saveLabel, unsaveLabel }) {
   const badgeClass = `badge badge--${obj.type}`
-  // Use the fine-grained classifier (same as InfoPanel) so the badge label in the
-  // search list is always in sync with what the info panel shows on the right.
+  // Only override the label for objects where the coarse type is misleading.
+  // Currently: quasars come back as type 'galaxy' from SIMBAD — promote those.
+  // Everything else (star, planet, nebula, moon…) shows its coarse type as-is.
   const fineType = useMemo(() => {
+    if (obj.type !== 'galaxy') return obj.type
     const appearance = buildAppearance(obj)
     const ct = appearance?.celestialType
-    return ct && ct !== CelestialType.Unknown ? ct : obj.type
+    return ct === CelestialType.Quasar ? ct : obj.type
   }, [obj])
   return (
     <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, marginBottom: 4 }}>
