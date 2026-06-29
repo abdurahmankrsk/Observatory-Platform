@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 
 from dotenv import load_dotenv
 
-from routers import exoplanets, asteroids, search
+from routers import exoplanets, asteroids, search, translate
 
 
 # Load environment variables
@@ -111,6 +111,7 @@ async def log_requests(request: Request, call_next):
 app.include_router(search.router)
 app.include_router(exoplanets.router)
 app.include_router(asteroids.router)
+app.include_router(translate.router)
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

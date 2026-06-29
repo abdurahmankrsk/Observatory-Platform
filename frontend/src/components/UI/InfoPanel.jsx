@@ -7,6 +7,7 @@ import React, { useEffect, useRef } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
 import { useProceduralGen } from '../../hooks/useProceduralGen'
+import { useTranslatedObject } from '../../hooks/useNASAData'
 import { formatDistance } from '../../utils/astronomyMath'
 import { isInHabitableZone } from '../../utils/colorFromTemperature'
 import { getSpectralClass } from '../../utils/colorFromTemperature'
@@ -95,13 +96,15 @@ function AsteroidInfo({ data, approach, t }) {
 
 export default function InfoPanel() {
   const panelRef = useRef()
-  const { t, tType } = useTranslation()
+  const { t, tType, lang } = useTranslation()
   const selectedObject = useObservatoryStore((s) => s.selectedObject)
   const beginFlight = useObservatoryStore((s) => s.beginFlight)
   const returnToObservatory = useObservatoryStore((s) => s.returnToObservatory)
   const scene = useObservatoryStore((s) => s.scene)
   // Precise classified type (e.g. "Black Hole", "Pulsar") for the badge label.
   const appearance = useProceduralGen(selectedObject)
+  // Free-text fields translated to the active language (no-op for English).
+  const { description, fun_fact } = useTranslatedObject(selectedObject, lang)
 
   const isTargeting = scene === 'targeting'
   const isViewing = scene === 'viewing'
@@ -175,14 +178,14 @@ export default function InfoPanel() {
       </p>
 
       {/* Description */}
-      {selectedObject.description && (
+      {description && (
         <p style={{
           color: 'var(--color-grey)',
           fontSize: '0.8125rem',
           lineHeight: 1.6,
           marginBottom: 16,
         }}>
-          {selectedObject.description}
+          {description}
         </p>
       )}
 
@@ -207,7 +210,7 @@ export default function InfoPanel() {
       )}
 
       {/* Fun fact */}
-      {selectedObject.fun_fact && (
+      {fun_fact && (
         <div style={{
           marginTop: 16,
           padding: '12px',
@@ -217,7 +220,7 @@ export default function InfoPanel() {
         }}>
           <p className="text-label" style={{ marginBottom: 6 }}>{t('info.didYouKnow')}</p>
           <p style={{ color: 'var(--color-grey)', fontSize: '0.8125rem', lineHeight: 1.5 }}>
-            {selectedObject.fun_fact}
+            {fun_fact}
           </p>
         </div>
       )}

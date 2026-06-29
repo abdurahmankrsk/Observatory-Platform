@@ -40,6 +40,41 @@ export function usePopularObjects() {
   })
 }
 
+// ── Free-text translation (object description / fun fact) ───────────────────
+
+/**
+ * Translate an object's free-text fields (description, fun_fact) to `lang` via
+ * the backend /api/translate proxy. No-op for English: returns the originals and
+ * makes no request. Fails open — if translation errors, the original text shows.
+ * Cached per (lang, object id); the backend caches per string on top of that.
+ */
+export function useTranslatedObject(object, lang) {
+  const texts = []
+  if (object?.description) texts.push(object.description)
+  if (object?.fun_fact) texts.push(object.fun_fact)
+
+  const enabled = !!lang && lang !== 'en' && texts.length > 0
+
+  const { data } = useQuery({
+    queryKey: ['translate', lang, object?.id],
+    queryFn: async () => {
+      const { data } = await api.post('/api/translate', {
+        texts,
+        target: lang,
+        source: 'en',
+      })
+      return data.translations || {}
+    },
+    enabled,
+    staleTime: Infinity,
+    retry: 1,
+  })
+
+  const map = data || {}
+  const pick = (s) => (s ? map[s] || s : s)
+  return { description: pick(object?.description), fun_fact: pick(object?.fun_fact) }
+}
+
 // ── Exoplanets ─────────────────────────────────────────────────────────────
 
 export function useExoplanets(limit = 50, habitable = false) {

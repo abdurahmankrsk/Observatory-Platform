@@ -181,8 +181,8 @@ const bs = {
   'app.unknownError': 'Nepoznata greška',
   'app.reload': 'PONOVO UČITAJ',
   'app.webglRequired': 'AstroObservatory zahtijeva podršku za WebGL za prikaz 3D scena. Molimo koristite moderan preglednik (Chrome, Firefox, Edge ili Safari 15+).',
-  'app.rotationOn': 'ROTACIJA: UKLJ',
-  'app.rotationOff': 'ROTACIJA: ISKLJ',
+  'app.rotationOn': 'ROTACIJA: UKLJUČENA',
+  'app.rotationOff': 'ROTACIJA: ISKLJUČENA',
 
   // Scene indicator (top-right HUD)
   'scene.entering': 'ULAZAK',

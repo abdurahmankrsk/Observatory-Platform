@@ -10,6 +10,7 @@ from pydantic import SerializeAsAny
 from models.schemas import CelestialObject, SearchResponse, IdentifyResponse
 from services.simbad_service import (
     search_simbad,
+    search_simbad_many,
     identify_by_coordinates,
     get_popular_objects,
     KNOWN_OBJECTS,
@@ -54,12 +55,10 @@ async def search(
     3. SIMBAD TAP query (everything else)
     """
     query = q.strip()
-    results: list[CelestialObject] = []
 
-    # 1. Check SIMBAD known objects and solar system (instant)
-    simbad_result = await search_simbad(query)
-    if simbad_result:
-        results.append(simbad_result)
+    # 1. SIMBAD + curated catalogs — returns multiple matches so a catalogue
+    #    prefix like "PSR" or "NGC 7" lists many objects, not just the top hit.
+    results: list[CelestialObject] = await search_simbad_many(query, limit=12)
 
     # 2. Check NASA Exoplanet Archive (if not already found as an exoplanet)
     if not results or results[0].type != "exoplanet":

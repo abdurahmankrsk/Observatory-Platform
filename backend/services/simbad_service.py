@@ -443,6 +443,87 @@ async def search_simbad(query: str) -> Optional[CelestialObject]:
     return result
 
 
+async def search_simbad_many(query: str, limit: int = 12) -> List[CelestialObject]:
+    """
+    Search SIMBAD for objects whose identifier matches `query`, returning up to
+    `limit` distinct objects (most-referenced first). Used by the search panel so a
+    catalogue-prefix query like "PSR" (pulsars) or "NGC 7" returns many hits, not
+    just the single best match. Curated-catalog matches are surfaced first.
+    """
+    query_lower = query.lower().strip()
+    query_alt = query_lower[4:].strip() if query_lower.startswith("the ") else query_lower
+
+    results: List[CelestialObject] = []
+    seen: set[str] = set()
+
+    def add(obj: Optional[CelestialObject]) -> None:
+        if obj is not None and obj.id not in seen:
+            seen.add(obj.id)
+            results.append(obj)
+
+    # Curated catalogs first — exact name, then partial (deep-sky) matches.
+    for catalog in (KNOWN_OBJECTS, SOLAR_SYSTEM, MOONS, ASTEROIDS):
+        if query_lower in catalog:
+            add(catalog[query_lower])
+        elif query_alt in catalog:
+            add(catalog[query_alt])
+    for key, obj in KNOWN_OBJECTS.items():
+        if query_lower in key or key in query_lower:
+            add(obj)
+
+    cache_key = f"simbad_many:{query_lower}:{limit}"
+    cached = _get_cached(cache_key)
+    if cached is None:
+        norm = " ".join(query.upper().split()).replace("'", "''")
+        # Over-fetch: one object can match through several identifiers (e.g. a
+        # pulsar has both a PSR B… and PSR J… name), so fetch extra rows and
+        # de-duplicate by object id down to `limit`.
+        cached = await _query_simbad_many(
+            f"""
+            SELECT TOP {limit * 4} main_id, otype, ra, dec, plx_value, sp_type, nbref
+            FROM basic JOIN ident ON ident.oidref = basic.oid
+            WHERE ident.id LIKE '{norm}%'
+            ORDER BY nbref DESC
+            """,
+            fallback_name=query,
+        )
+        if not cached:
+            # Prefix found nothing — fall back to a contains match.
+            cached = await _query_simbad_many(
+                f"""
+                SELECT TOP {limit * 4} main_id, otype, ra, dec, plx_value, sp_type, nbref
+                FROM basic JOIN ident ON ident.oidref = basic.oid
+                WHERE ident.id LIKE '%{norm}%'
+                ORDER BY nbref DESC
+                """,
+                fallback_name=query,
+            )
+        _set_cached(cache_key, cached)
+
+    for obj in cached:
+        add(obj)
+    return results[:limit]
+
+
+async def _query_simbad_many(adql_query: str, fallback_name: str) -> List[CelestialObject]:
+    """Run an ADQL query against SIMBAD TAP and parse every returned row."""
+    params = {
+        "REQUEST": "doQuery",
+        "LANG": "ADQL",
+        "QUERY": adql_query,
+        "FORMAT": "json",
+    }
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        try:
+            resp = await client.get(SIMBAD_TAP, params=params)
+            if resp.status_code != 200:
+                return []
+            data = resp.json()
+        except Exception:
+            return []
+    return _parse_simbad_all_rows(data, fallback_name=fallback_name)
+
+
 async def _query_simbad(adql_query: str, fallback_name: str) -> Optional[CelestialObject]:
     """Run an ADQL query against the SIMBAD TAP service and parse its first row."""
     params = {
@@ -462,47 +543,57 @@ async def _query_simbad(adql_query: str, fallback_name: str) -> Optional[Celesti
     return _parse_simbad_rows(data, fallback_name=fallback_name)
 
 
-def _parse_simbad_rows(data: Dict[str, Any], fallback_name: str) -> Optional[CelestialObject]:
-    """Parse a SIMBAD TAP JSON response (first/closest row) into a CelestialObject."""
+def _parse_simbad_all_rows(data: Dict[str, Any], fallback_name: str) -> List[CelestialObject]:
+    """Parse every row of a SIMBAD TAP JSON response into CelestialObjects."""
     rows = data.get("data", [])
     cols = data.get("metadata", [])
     if not rows or not cols:
-        return None
+        return []
 
-    # Parse column names
     col_names = [c.get("name", "").lower() for c in cols]
 
-    def get_val(row: list, col: str) -> Any:
+    def col_index(col: str) -> Optional[int]:
         try:
-            idx = col_names.index(col)
-            return row[idx]
+            return col_names.index(col)
         except ValueError:
             return None
 
-    row = rows[0]
-    main_id = get_val(row, "main_id") or fallback_name
-    main_id = " ".join(str(main_id).split())  # collapse SIMBAD padding, e.g. "M  31"
-    # Drop SIMBAD's "NAME " common-name marker for display, e.g.
-    # "NAME 30 Dor Nebula" → "30 Dor Nebula".
-    if main_id.upper().startswith("NAME "):
-        main_id = main_id[5:]
-    otype = get_val(row, "otype") or "star"
-    ra = get_val(row, "ra")
-    dec = get_val(row, "dec")
-    plx = get_val(row, "plx_value")  # parallax in mas
-    sp_type = get_val(row, "sp_type")
+    objects: List[CelestialObject] = []
+    for row in rows:
+        def get_val(col: str) -> Any:
+            idx = col_index(col)
+            return row[idx] if idx is not None else None
 
-    # Convert parallax to distance
-    dist_ly = None
-    if plx and plx > 0:
-        dist_parsec = 1000.0 / plx
-        dist_ly = dist_parsec * 3.26156
+        main_id = get_val("main_id") or fallback_name
+        main_id = " ".join(str(main_id).split())  # collapse SIMBAD padding, e.g. "M  31"
+        # Drop SIMBAD's "NAME " common-name marker for display, e.g.
+        # "NAME 30 Dor Nebula" → "30 Dor Nebula".
+        if main_id.upper().startswith("NAME "):
+            main_id = main_id[5:]
+        otype = get_val("otype") or "star"
+        ra = get_val("ra")
+        dec = get_val("dec")
+        plx = get_val("plx_value")  # parallax in mas
+        sp_type = get_val("sp_type")
 
-    # Map SIMBAD object type to our coarse visual type, but keep the raw code so
-    # the frontend classifier can recover the precise sub-type (pulsar, SNR, …).
-    obj_type = _map_simbad_type(otype)
+        # Convert parallax to distance
+        dist_ly = None
+        if plx and plx > 0:
+            dist_ly = (1000.0 / plx) * 3.26156
 
-    return _build_simbad_response(main_id, obj_type, ra, dec, dist_ly, sp_type, otype)
+        # Map SIMBAD object type to our coarse visual type, but keep the raw code
+        # so the frontend classifier can recover the sub-type (pulsar, SNR, …).
+        obj_type = _map_simbad_type(otype)
+        objects.append(
+            _build_simbad_response(main_id, obj_type, ra, dec, dist_ly, sp_type, otype)
+        )
+    return objects
+
+
+def _parse_simbad_rows(data: Dict[str, Any], fallback_name: str) -> Optional[CelestialObject]:
+    """Parse a SIMBAD TAP JSON response (first/closest row) into a CelestialObject."""
+    objects = _parse_simbad_all_rows(data, fallback_name)
+    return objects[0] if objects else None
 
 
 async def identify_by_coordinates(

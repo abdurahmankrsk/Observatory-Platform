@@ -447,14 +447,16 @@ export default function Interior() {
       {/* ── Equipment Shelves ─────────────────────────────────────────── */}
       {/* Mounted flush against the interior wall (r≈7.85, just inside r=8).
           Rotation = -angle - π/2 so the shelf's open face (+z, with the books
-          and instruments) points radially inward toward the room centre. */}
+          and instruments) points radially inward toward the room centre.
+          Angles are panel-bay centres (135°, 225° = π·0.75, π·1.25) so the unit
+          sits between the vertical pilasters (every 30°) instead of clipping one. */}
       <ShelfUnit
-        position={[Math.cos(Math.PI * 0.65) * 7.85, 2.2, Math.sin(Math.PI * 0.65) * 7.85]}
-        rotation={[0, -Math.PI * 0.65 - Math.PI / 2, 0]}
+        position={[Math.cos(Math.PI * 0.75) * 7.85, 2.2, Math.sin(Math.PI * 0.75) * 7.85]}
+        rotation={[0, -Math.PI * 0.75 - Math.PI / 2, 0]}
       />
       <ShelfUnit
-        position={[Math.cos(Math.PI * 1.35) * 7.85, 2.2, Math.sin(Math.PI * 1.35) * 7.85]}
-        rotation={[0, -Math.PI * 1.35 - Math.PI / 2, 0]}
+        position={[Math.cos(Math.PI * 1.25) * 7.85, 2.2, Math.sin(Math.PI * 1.25) * 7.85]}
+        rotation={[0, -Math.PI * 1.25 - Math.PI / 2, 0]}
       />
 
       {/* ── Star Chart Panel ──────────────────────────────────────────── */}
