@@ -6,11 +6,13 @@
  * query cancels any in-flight request and clears stale results.
  * Anime.js slide-in animation on mount.
  */
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
 import { useSearchMutation, usePopularObjects } from '../../hooks/useNASAData'
 import { useTranslation } from '../../i18n'
+import { buildAppearance } from '../../procedural/ProceduralAppearanceBuilder'
+import { CelestialType } from '../../procedural/CelestialType'
 
 const TYPE_ICONS = {
   planet: '🪐',
@@ -26,6 +28,13 @@ const TYPE_ICONS = {
 
 function ObjectCard({ obj, onClick, tType, saved, onToggleSave, saveLabel, unsaveLabel }) {
   const badgeClass = `badge badge--${obj.type}`
+  // Use the fine-grained classifier (same as InfoPanel) so the badge label in the
+  // search list is always in sync with what the info panel shows on the right.
+  const fineType = useMemo(() => {
+    const appearance = buildAppearance(obj)
+    const ct = appearance?.celestialType
+    return ct && ct !== CelestialType.Unknown ? ct : obj.type
+  }, [obj])
   return (
     <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, marginBottom: 4 }}>
       <button
@@ -45,7 +54,7 @@ function ObjectCard({ obj, onClick, tType, saved, onToggleSave, saveLabel, unsav
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8125rem', color: 'var(--color-star)' }}>
           {obj.name}
         </span>
-        <span className={badgeClass}>{tType(obj.type)}</span>
+        <span className={badgeClass}>{tType(fineType)}</span>
       </button>
       <button
         className="btn-ghost"
