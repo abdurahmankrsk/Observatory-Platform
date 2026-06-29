@@ -51,20 +51,28 @@ void main() {
   vec3 color = mix(uInnerColor, uMidColor, smoothstep(0.0, 0.5, t));
   color = mix(color, uOuterColor, smoothstep(0.5, 1.0, t));
 
-  // Swirling turbulence — orbital shear makes inner material spin faster.
-  float swirl = angle * 3.0 - uTime * (2.5 - t * 1.8) - r * 2.0;
-  float n = fbm(vec3(cos(swirl) * r, sin(swirl) * r, uTime * 0.1)) ;
-  float bands = 0.6 + 0.4 * n;
+  // Swirling turbulence — LOW frequency and low contrast on purpose. The
+  // previous high-frequency swirl (angle*3, r*2, 28% noise) aliased against the
+  // pixel grid as it animated, and the bloom pass amplified that sparkle into
+  // the brief "flashes / explosions" around the horizon. Smooth, gentle bands
+  // don't alias, so they don't flash.
+  float swirl = angle * 2.0 - uTime * (0.9 - t * 0.5) - r * 1.0;
+  float n = fbm(vec3(cos(swirl) * r * 0.5, sin(swirl) * r * 0.5, uTime * 0.04));
+  float bands = 0.86 + 0.14 * n;
 
-  // Doppler beaming: approaching side (angle ~ +x) brightened, receding dimmed.
-  float doppler = 0.55 + 0.85 * (0.5 + 0.5 * cos(angle - 1.5708));
+  // Doppler beaming: approaching side brightened, receding dimmed. Gentle so the
+  // bright side is a soft gradient, never a blooming hotspot.
+  float doppler = 0.84 + 0.3 * (0.5 + 0.5 * cos(angle - 1.5708));
 
-  // Radial falloff for a soft outer edge and a bright inner lip.
-  float inner = smoothstep(uInner, uInner + 0.25, r);
+  // Radial falloff: a WIDE inner ramp (no sharp bright lip against the black
+  // horizon — that hard high-contrast edge was a second flash source) and a soft
+  // outer edge.
+  float inner = smoothstep(uInner, uInner + 0.6, r);
   float outer = 1.0 - smoothstep(uOuter - 1.2, uOuter, r);
-  float intensity = inner * outer * bands * doppler * uBrightness;
+  // Clamp the peak well down so no fragment can run away into a bloom flare.
+  float intensity = min(inner * outer * bands * doppler * uBrightness, 1.1);
 
-  float alpha = inner * outer * (0.55 + 0.45 * n);
+  float alpha = inner * outer * (0.7 + 0.3 * n);
   gl_FragColor = vec4(color * intensity, alpha);
 }
 `
@@ -137,7 +145,7 @@ export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
 
   // Infalling particle field spiralling in the disk plane.
   const particleGeo = useMemo(() => {
-    const count = 1500
+    const count = 700
     const geo = new THREE.BufferGeometry()
     const pos = new Float32Array(count * 3)
     const inner = params?.diskInner ?? r * 1.6
@@ -163,45 +171,45 @@ export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
 
   return (
     <group position={position} rotation={[tilt, 0, 0]}>
-      {/* Event horizon — absolute black, occludes the disk behind it */}
+      {/* Event horizon — black sphere with a thin white CRESCENT on one edge so
+          you can see where the hole is without ever seeing a full ring. The rim
+          is a Fresnel term on the OPAQUE horizon sphere itself (not an additive
+          shell), so it can't flicker, stack, or bloom-flash. It's then masked to
+          a crescent locked to a fixed *screen* direction: vN is the view-space
+          normal, so vN.xy is the screen-radial direction — the bright edge stays
+          on the same side of the screen as the camera orbits, like glancing off
+          the edge of a backlit sphere. */}
       <mesh>
-        <sphereGeometry args={[r, 48, 48]} />
-        <meshBasicMaterial color="#000000" />
-      </mesh>
-
-      {/* Photon-ring / lensing rim — bright Fresnel shell hugging the horizon.
-          depthTest is OFF: otherwise the shell's back faces are depth-tested
-          against the opaque black horizon sphere right at its silhouette, and
-          that per-pixel knife-edge aliases as the camera orbits — which the bloom
-          pass amplifies into the "white flashing" on the event horizon. With the
-          test off the whole rim renders stably (Fresnel keeps the centre dark, so
-          the horizon stays black). Gain is kept modest so bloom can't blow it out. */}
-      <mesh renderOrder={3}>
-        <sphereGeometry args={[r * 1.12, 48, 48]} />
+        <sphereGeometry args={[r, 64, 64]} />
         <shaderMaterial
-          transparent
-          side={THREE.BackSide}
-          depthWrite={false}
-          depthTest={false}
-          blending={THREE.AdditiveBlending}
-          uniforms={{ uColor: { value: params?.diskInnerColor ?? new THREE.Color(1, 0.9, 0.7) } }}
+          uniforms={{ uRim: { value: new THREE.Color(0.95, 0.97, 1.0) } }}
           vertexShader={`
             varying vec3 vN; varying vec3 vV;
             void main(){
               vN = normalize(normalMatrix * normal);
-              vec4 wp = modelMatrix * vec4(position,1.0);
+              vec4 wp = modelMatrix * vec4(position, 1.0);
               vV = normalize(cameraPosition - wp.xyz);
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }`}
           fragmentShader={`
-            uniform vec3 uColor; varying vec3 vN; varying vec3 vV;
+            uniform vec3 uRim; varying vec3 vN; varying vec3 vV;
             void main(){
-              // Soft, stable photon-ring rim (lower gain avoids bloom flicker).
-              float f = pow(1.0 - abs(dot(vN, vV)), 3.0);
-              gl_FragColor = vec4(uColor * f * 0.95, f * 0.55);
+              // Thin rim only at the grazing silhouette (higher power = smaller).
+              float fres = pow(1.0 - abs(dot(vN, vV)), 7.0);
+              // Keep only a crescent: the part of the silhouette toward a fixed
+              // screen direction. Locked to view space so it tracks the camera.
+              vec2 dir = normalize(vec2(0.4, -1.0));            // lower edge
+              float side = dot(normalize(vN.xy + vec2(1e-4)), dir);
+              float crescent = smoothstep(0.15, 1.0, side);
+              gl_FragColor = vec4(uRim * fres * crescent, 1.0);
             }`}
         />
       </mesh>
+
+      {/* No photon-ring / lensing shell. Every variant of it (additive Fresnel
+          rim) read as the "weird white/glowing ring" the user disliked and was a
+          source of edge flicker. The accretion disk alone defines the hole's
+          silhouette, which looks cleaner and is flicker-free. */}
 
       {/* Accretion disk (lies in the XZ plane) */}
       {params?.accretionDisk !== false && (
@@ -224,10 +232,10 @@ export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
         <points ref={particlesRef} geometry={particleGeo}>
           <pointsMaterial
             color={params?.diskMidColor ?? new THREE.Color(1, 0.6, 0.2)}
-            size={0.05}
-            sizeAttenuation
+            size={2.0}
+            sizeAttenuation={false}
             transparent
-            opacity={0.7}
+            opacity={0.3}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
           />

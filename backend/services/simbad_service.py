@@ -115,7 +115,7 @@ KNOWN_OBJECTS: Dict[str, CelestialObject] = {
     # colour. distance_au=1 is the Earth–Sun distance (it has no fixed RA/Dec).
     "sun": StarResponse(
         id="sun",
-        name="The Sun (Sol)",
+        name="Sun",
         type="star",
         distance_au=1.0,
         description="Our home star — a G-type main-sequence (G2V) yellow dwarf that holds 99.8% of the Solar System's mass and drives almost all of Earth's weather and life.",
@@ -124,7 +124,7 @@ KNOWN_OBJECTS: Dict[str, CelestialObject] = {
     ),
     "sol": StarResponse(
         id="sun",
-        name="The Sun (Sol)",
+        name="Sun",
         type="star",
         distance_au=1.0,
         description="Our home star — a G-type main-sequence (G2V) yellow dwarf that holds 99.8% of the Solar System's mass and drives almost all of Earth's weather and life.",
@@ -334,12 +334,12 @@ SOLAR_SYSTEM: Dict[str, CelestialObject] = {
 # to CelestialType.Moon; descriptions carry the visual hints (icy, volcanic, …).
 MOONS: Dict[str, CelestialObject] = {
     "moon": CelestialObject(
-        id="moon", name="The Moon (Luna)", type="moon", distance_au=0.00257,
+        id="moon", name="Moon", type="moon", distance_au=0.00257,
         description="Earth's only natural satellite — a grey, heavily cratered rocky world with no atmosphere.",
         fun_fact="The Moon is slowly drifting away from Earth at about 3.8 cm per year.",
     ),
     "luna": CelestialObject(
-        id="moon", name="The Moon (Luna)", type="moon", distance_au=0.00257,
+        id="moon", name="Moon", type="moon", distance_au=0.00257,
         description="Earth's only natural satellite — a grey, heavily cratered rocky world with no atmosphere.",
         fun_fact="The Moon is slowly drifting away from Earth at about 3.8 cm per year.",
     ),

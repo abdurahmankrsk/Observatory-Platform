@@ -389,8 +389,9 @@ function buildBlackHole(object, seed, features) {
     diskMidColor: col(1.0, 0.55, 0.2),
     diskOuterColor: col(0.7, 0.15, 0.35),
     // Kept moderate: a very bright additive inner lip next to the pure-black
-    // horizon is the high-contrast edge bloom turns into flicker.
-    diskBrightness: active ? 2.0 : 1.1,
+    // horizon is the high-contrast edge bloom turns into flicker/flashes. The
+    // disk shader also hard-clamps its output, so this mostly sets the mid tone.
+    diskBrightness: active ? 1.2 : 0.85,
     diskInner: 1.6 + seed * 0.2,
     diskOuter: 4.5 + seed * 1.5,
     diskTilt: 0.45 + seed * 0.25,
