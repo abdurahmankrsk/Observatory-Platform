@@ -150,10 +150,10 @@ export default function InfoPanel() {
       style={{
         position: 'fixed',
         right: isMobile ? 8 : 24,
-        top: isMobile ? 'auto' : '50%',
-        bottom: isMobile ? 8 : undefined,
+        top: isMobile ? (isMinimized ? 100 : 'auto') : '50%',
+        bottom: isMobile ? (isMinimized ? 'auto' : 8) : undefined,
         transform: isMobile ? 'none' : 'translateY(-50%)',
-        width: isMobile ? 'calc(100vw - 170px)' : 320,
+        width: isMobile ? (isMinimized ? 200 : 'calc(100vw - 170px)') : 320,
         maxHeight: isMobile ? (isMinimized ? 'auto' : '40vh') : (isMinimized ? 'auto' : '80vh'),
         display: 'flex',
         flexDirection: 'column',
@@ -241,32 +241,32 @@ export default function InfoPanel() {
         </div>
       )}
 
-      {/* Actions (Desktop only) */}
-      {!isMobile && (
-        <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {isTargeting && (
-            <button
-              id="fly-to-btn"
-              className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center' }}
-              onClick={beginFlight}
-            >
-              {t('info.flyTo', { name: (selectedObject.name || 'Target').replace(/^the\s+/i, '').split(/[\s(]/)[0].toUpperCase() })}
-            </button>
-          )}
+      {/* Actions (Mixed Desktop/Mobile) */}
+      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {(!isMobile && isTargeting) && (
           <button
-            id="save-object-btn"
-            className="btn-ghost"
-            aria-pressed={isSaved}
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              color: isSaved ? 'var(--color-amber)' : undefined,
-            }}
-            onClick={() => toggleSaved(selectedObject)}
+            id="fly-to-btn"
+            className="btn-primary"
+            style={{ width: '100%', justifyContent: 'center' }}
+            onClick={beginFlight}
           >
-            {isSaved ? t('info.saved') : t('info.save')}
+            {t('info.flyTo', { name: (selectedObject.name || 'Target').replace(/^the\s+/i, '').split(/[\s(]/)[0].toUpperCase() })}
           </button>
+        )}
+        <button
+          id="save-object-btn"
+          className="btn-ghost"
+          aria-pressed={isSaved}
+          style={{
+            width: '100%',
+            justifyContent: 'center',
+            color: isSaved ? 'var(--color-amber)' : undefined,
+          }}
+          onClick={() => toggleSaved(selectedObject)}
+        >
+          {isSaved ? t('info.saved') : t('info.save')}
+        </button>
+        {(!isMobile || isTargeting) && (
           <button
             id="back-to-observatory-btn"
             className="btn-ghost"
@@ -275,8 +275,8 @@ export default function InfoPanel() {
           >
             {t('info.back')}
           </button>
-        </div>
-      )}
+        )}
+      </div>
         </div>
       )}
 
@@ -288,7 +288,7 @@ export default function InfoPanel() {
     </div>
 
     {/* Actions (Mobile only) - Rendered outside the panel so it stays truly fixed to the viewport */}
-    {isMobile && !isMinimized && (
+    {isMobile && (
       <div 
         style={{
           position: 'fixed',
@@ -311,28 +311,16 @@ export default function InfoPanel() {
             {t('info.flyTo', { name: (selectedObject.name || 'Target').replace(/^the\s+/i, '').split(/[\s(]/)[0].toUpperCase() })}
           </button>
         )}
-        <button
-          id="save-object-btn-mobile"
-          className="panel btn-ghost"
-          aria-pressed={isSaved}
-          style={{
-            width: '100%',
-            justifyContent: 'center',
-            color: isSaved ? 'var(--color-amber)' : undefined,
-            background: 'var(--color-panel)',
-          }}
-          onClick={() => toggleSaved(selectedObject)}
-        >
-          {isSaved ? t('info.saved') : t('info.save')}
-        </button>
-        <button
-          id="back-to-observatory-btn-mobile"
-          className="panel btn-ghost"
-          style={{ width: '100%', justifyContent: 'center', background: 'var(--color-panel)' }}
-          onClick={returnToObservatory}
-        >
-          {t('info.back')}
-        </button>
+        {isViewing && (
+          <button
+            id="back-to-observatory-btn-mobile"
+            className="panel btn-ghost"
+            style={{ width: '100%', justifyContent: 'center', background: 'var(--color-panel)' }}
+            onClick={returnToObservatory}
+          >
+            {t('info.back')}
+          </button>
+        )}
       </div>
     )}
     </>
