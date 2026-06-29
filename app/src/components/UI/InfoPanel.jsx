@@ -153,7 +153,7 @@ export default function InfoPanel() {
         top: isMobile ? 'auto' : '50%',
         bottom: isMobile ? 8 : undefined,
         transform: isMobile ? 'none' : 'translateY(-50%)',
-        width: isMobile ? 180 : 320,
+        width: isMobile ? 'calc(100vw - 170px)' : 320,
         maxHeight: isMobile ? (isMinimized ? 'auto' : '40vh') : (isMinimized ? 'auto' : '80vh'),
         display: 'flex',
         flexDirection: 'column',
@@ -298,7 +298,7 @@ export default function InfoPanel() {
           display: 'flex',
           flexDirection: 'column',
           gap: 8,
-          width: 180,
+          width: 140,
         }}
       >
         {isTargeting && (
