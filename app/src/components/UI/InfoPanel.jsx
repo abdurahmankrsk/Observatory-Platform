@@ -181,7 +181,7 @@ export default function InfoPanel() {
         marginBottom: 8,
         lineHeight: 1.2,
       }}>
-        {selectedObject.name}
+        {selectedObject.name || 'Unknown Object'}
       </h2>
 
       {/* Distance */}
@@ -249,7 +249,7 @@ export default function InfoPanel() {
             style={{ width: '100%', justifyContent: 'center' }}
             onClick={beginFlight}
           >
-            {t('info.flyTo', { name: selectedObject.name.replace(/^the\s+/i, '').split(/[\s(]/)[0].toUpperCase() })}
+            {t('info.flyTo', { name: (selectedObject.name || 'Target').replace(/^the\s+/i, '').split(/[\s(]/)[0].toUpperCase() })}
           </button>
         )}
         <button

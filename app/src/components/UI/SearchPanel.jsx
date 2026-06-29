@@ -167,7 +167,7 @@ export default function SearchPanel() {
       style={{
         position: 'fixed',
         left: isMobile ? 8 : 24,
-        top: isMobile ? 8 : '50%',
+        top: isMobile ? 64 : '50%',
         transform: isMobile ? 'none' : 'translateY(-50%)',
         width: isMobile ? 180 : 300,
         maxHeight: isMobile ? (isMinimized ? 'auto' : '35vh') : (isMinimized ? 'auto' : '75vh'),
