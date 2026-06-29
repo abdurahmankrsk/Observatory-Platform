@@ -86,13 +86,17 @@ export function useObject(id) {
 
 export function useSearchMutation() {
   return useMutation({
-    mutationFn: async (query) => {
+    // Accepts { query, signal }. The AbortSignal lets the caller cancel an
+    // in-flight request when the user edits the query (so a slow SIMBAD lookup
+    // doesn't land stale results after the text has changed).
+    mutationFn: async ({ query, signal }) => {
       // A live SIMBAD lookup for an object not in the hardcoded list can take
       // longer than the shared 15s axios default, so allow up to 25s (matching
       // the backend's headroom) to avoid the client aborting a valid search.
       const { data } = await api.get('/api/search', {
         params: { q: query },
         timeout: 25000,
+        signal,
       })
       return data
     },

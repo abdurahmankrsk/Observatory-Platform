@@ -15,7 +15,7 @@
  *     atmosphere, particleEffects, pulse, ...generator-specific params }
  */
 import * as THREE from 'three'
-import { classify, parseSpectralType } from './CelestialClassifier'
+import { classify, parseSpectralType, classifyStar } from './CelestialClassifier'
 import { CelestialType, PlanetClass, generatorForType, Generator, humanLabel } from './CelestialType'
 import { parseFeatures } from './DescriptionParser'
 import {
@@ -55,6 +55,35 @@ function giantPalette(planetClass, seed) {
       return { a: col(warm, 0.45 + seed * 0.2, 0.30), b: col(0.75, 0.6, 0.45), atm: col(0.9, 0.75, 0.55) }
     }
   }
+}
+
+// Hand-tuned appearance presets for known solar-system bodies, keyed by object
+// id. These override the generic class-based look so Jupiter, Saturn, Mars, the
+// Moon, Io, Europa, Titan… each read as themselves. Colours map onto the planet
+// shader's slots: terran uses ocean/terrain/ice; banded giants use bandColorA/B.
+const SOLAR_BODY_PRESETS = {
+  mercury: { radius: 0.95, surfaceStyle: 'terran', oceanColor: col(0.28, 0.26, 0.24), terrainColor: col(0.46, 0.43, 0.39), iceColor: col(0.46, 0.43, 0.39), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 3.4, rotationSpeed: 0.04 },
+  venus: { radius: 1.35, surfaceStyle: 'terran', oceanColor: col(0.7, 0.55, 0.25), terrainColor: col(0.82, 0.66, 0.32), iceColor: col(0.88, 0.78, 0.5), polarIce: false, atmosphereColor: col(0.96, 0.82, 0.45), hasAtmosphere: true, atmosphere: true, atmosphereThickness: 0.15, cloudCoverage: 0.92, rotationSpeed: 0.03 },
+  earth: { radius: 1.4, surfaceStyle: 'terran', oceanColor: col(0.04, 0.24, 0.6), terrainColor: col(0.2, 0.45, 0.16), iceColor: col(0.92, 0.96, 1.0), atmosphereColor: col(0.35, 0.6, 1.0), hasAtmosphere: true, atmosphere: true, atmosphereThickness: 0.1, cloudCoverage: 0.5, rotationSpeed: 0.12 },
+  mars: { radius: 1.2, surfaceStyle: 'terran', oceanColor: col(0.5, 0.22, 0.12), terrainColor: col(0.72, 0.36, 0.18), iceColor: col(0.95, 0.96, 1.0), atmosphereColor: col(0.85, 0.6, 0.5), hasAtmosphere: true, atmosphere: true, atmosphereThickness: 0.03, cloudCoverage: 0.05, noiseScale: 2.6, rotationSpeed: 0.11 },
+  jupiter: { radius: 2.4, surfaceStyle: 'bands', bandColorA: col(0.6, 0.46, 0.32), bandColorB: col(0.88, 0.78, 0.62), atmosphereColor: col(0.9, 0.8, 0.65), hasAtmosphere: true, atmosphere: true, atmosphereThickness: 0.12, cloudCoverage: 0, hasRings: false, noiseScale: 2.6, rotationSpeed: 0.4 },
+  saturn: { radius: 2.1, surfaceStyle: 'bands', bandColorA: col(0.8, 0.72, 0.5), bandColorB: col(0.92, 0.86, 0.66), atmosphereColor: col(0.92, 0.85, 0.62), hasAtmosphere: true, atmosphere: true, atmosphereThickness: 0.1, cloudCoverage: 0, hasRings: true, ringInner: 1.4, ringOuter: 2.5, ringColor: col(0.86, 0.79, 0.62), ringOpacity: 0.85, noiseScale: 2.4, rotationSpeed: 0.38 },
+  uranus: { radius: 1.7, surfaceStyle: 'bands', bandColorA: col(0.55, 0.8, 0.82), bandColorB: col(0.68, 0.9, 0.92), atmosphereColor: col(0.6, 0.85, 0.9), hasAtmosphere: true, atmosphere: true, atmosphereThickness: 0.11, cloudCoverage: 0, hasRings: true, ringInner: 1.6, ringOuter: 1.95, ringColor: col(0.6, 0.7, 0.75), ringOpacity: 0.25, rotationSpeed: 0.28 },
+  neptune: { radius: 1.65, surfaceStyle: 'bands', bandColorA: col(0.13, 0.3, 0.75), bandColorB: col(0.26, 0.46, 0.92), atmosphereColor: col(0.3, 0.5, 1.0), hasAtmosphere: true, atmosphere: true, atmosphereThickness: 0.11, cloudCoverage: 0, hasRings: false, rotationSpeed: 0.3 },
+  pluto: { radius: 0.8, surfaceStyle: 'terran', oceanColor: col(0.5, 0.42, 0.35), terrainColor: col(0.66, 0.56, 0.46), iceColor: col(0.8, 0.74, 0.66), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 2.8 },
+  ceres: { radius: 0.75, surfaceStyle: 'terran', oceanColor: col(0.3, 0.28, 0.26), terrainColor: col(0.46, 0.42, 0.38), iceColor: col(0.46, 0.42, 0.38), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 3.2 },
+  eris: { radius: 0.78, surfaceStyle: 'terran', oceanColor: col(0.7, 0.7, 0.72), terrainColor: col(0.82, 0.82, 0.85), iceColor: col(0.95, 0.96, 1.0), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0 },
+  // ── Moons ──
+  moon: { radius: 0.75, surfaceStyle: 'terran', oceanColor: col(0.2, 0.2, 0.22), terrainColor: col(0.45, 0.45, 0.47), iceColor: col(0.45, 0.45, 0.47), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 3.6, rotationSpeed: 0.03 },
+  io: { radius: 0.8, surfaceStyle: 'terran', oceanColor: col(0.72, 0.55, 0.12), terrainColor: col(0.88, 0.74, 0.22), iceColor: col(0.6, 0.28, 0.1), polarIce: false, emissive: true, emissiveIntensity: 0.25, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 2.8 },
+  europa: { radius: 0.72, surfaceStyle: 'terran', oceanColor: col(0.72, 0.74, 0.8), terrainColor: col(0.86, 0.82, 0.78), iceColor: col(0.96, 0.97, 1.0), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 1.6 },
+  ganymede: { radius: 0.85, surfaceStyle: 'terran', oceanColor: col(0.4, 0.38, 0.36), terrainColor: col(0.56, 0.51, 0.46), iceColor: col(0.56, 0.51, 0.46), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 2.6 },
+  callisto: { radius: 0.82, surfaceStyle: 'terran', oceanColor: col(0.24, 0.22, 0.2), terrainColor: col(0.4, 0.36, 0.32), iceColor: col(0.4, 0.36, 0.32), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 3.4 },
+  titan: { radius: 0.85, surfaceStyle: 'terran', oceanColor: col(0.5, 0.35, 0.12), terrainColor: col(0.68, 0.48, 0.18), iceColor: col(0.8, 0.62, 0.3), polarIce: false, atmosphereColor: col(0.92, 0.62, 0.22), hasAtmosphere: true, atmosphere: true, atmosphereThickness: 0.16, cloudCoverage: 0.88 },
+  enceladus: { radius: 0.6, surfaceStyle: 'terran', oceanColor: col(0.85, 0.88, 0.92), terrainColor: col(0.92, 0.94, 0.98), iceColor: col(0.99, 1.0, 1.0), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 1.8 },
+  triton: { radius: 0.7, surfaceStyle: 'terran', oceanColor: col(0.78, 0.68, 0.7), terrainColor: col(0.86, 0.78, 0.78), iceColor: col(0.96, 0.93, 0.96), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 2.2 },
+  phobos: { radius: 0.45, surfaceStyle: 'terran', oceanColor: col(0.2, 0.18, 0.16), terrainColor: col(0.32, 0.29, 0.26), iceColor: col(0.32, 0.29, 0.26), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 4.0 },
+  deimos: { radius: 0.4, surfaceStyle: 'terran', oceanColor: col(0.22, 0.2, 0.18), terrainColor: col(0.34, 0.31, 0.28), iceColor: col(0.34, 0.31, 0.28), polarIce: false, hasAtmosphere: false, atmosphere: false, cloudCoverage: 0, noiseScale: 3.6 },
 }
 
 function buildPlanet(object, planetClass, seed) {
@@ -158,10 +187,14 @@ function buildPlanet(object, planetClass, seed) {
       break
   }
 
+  // Known solar-system body? Its hand-tuned preset overrides the generic look.
+  const preset = SOLAR_BODY_PRESETS[String(object?.id || '').toLowerCase()]
+  if (preset) Object.assign(d, preset)
+
   return {
     generator: Generator.Planet,
     color: toHex(d.surfaceStyle === 'lava' ? d.oceanColor : (d.bandColorA || d.terrainColor)),
-    glowIntensity: d.emissive ? 1.5 : 0.0,
+    glowIntensity: d.emissive ? (d.emissiveIntensity ?? 1.5) : 0.0,
     jets: false,
     accretionDisk: false,
     atmosphere: d.atmosphere,
@@ -250,6 +283,57 @@ function buildStar(object, type, seed) {
     particleEffects: type === T.Protostar,
     pulse: false,
     binary: type === T.BinaryStar,
+  }
+}
+
+// ── BINARY / MULTIPLE STAR SYSTEMS ──────────────────────────────────────────
+function buildBinaryStar(object, seed) {
+  const text = [object?.name, object?.description, object?.fun_fact].filter(Boolean).join(' ').toLowerCase()
+  const count =
+    /\b(quadruple|quaternary|four[-\s]star)\b/.test(text) ? 4 :
+    /\b(triple|ternary|trinary|three[-\s]star)\b/.test(text) ? 3 : 2
+
+  // Primary keeps the catalogued spectral type (Sirius A1V → white A star).
+  const primaryType = (() => {
+    const t = classifyStar(object)
+    return !t || t === T.BinaryStar ? T.MainSequenceStar : t
+  })()
+  const primary = buildStar(object, primaryType, seed)
+
+  const wantsWhiteDwarf = /white dwarf/.test(text)
+  const stars = [primary]
+  for (let i = 1; i < count; i++) {
+    const cs = (seed * 0.37 * (i + 1)) % 1
+    let compType, compTemp
+    if (wantsWhiteDwarf && i === 1) {
+      compType = T.WhiteDwarf; compTemp = 13000
+    } else {
+      compType = cs < 0.5 ? T.MainSequenceStar : T.RedGiant
+      compTemp = 3300 + cs * 2800
+    }
+    const comp = buildStar({ name: `${object?.name || 'star'}-${i}`, star: { temperature_k: compTemp } }, compType, cs)
+    // Shrink ordinary companions so the primary still reads as the primary.
+    if (compType !== T.WhiteDwarf) comp.radius *= 0.55 + cs * 0.25
+    stars.push(comp)
+  }
+
+  const maxR = Math.max(...stars.map((s) => s.radius))
+  const separation = (primary.radius + maxR) * 2.6 + seed
+  return {
+    generator: Generator.BinaryStar,
+    type: T.BinaryStar,
+    color: primary.color,
+    stars,
+    componentCount: count,
+    separation,
+    orbitSpeed: 0.15 + seed * 0.2,
+    radius: primary.radius,
+    glowIntensity: primary.glowIntensity,
+    jets: false,
+    accretionDisk: false,
+    atmosphere: false,
+    particleEffects: false,
+    pulse: false,
   }
 }
 
@@ -463,7 +547,7 @@ const NEBULA_COLORS = {
   emission: { primary: [0.95, 0.25, 0.35], secondary: [0.7, 0.1, 0.45] },   // ionised hydrogen pink/red
   reflection: { primary: [0.25, 0.45, 0.95], secondary: [0.1, 0.6, 0.95] }, // scattered blue
   planetary: { primary: [0.15, 0.85, 0.7], secondary: [0.3, 0.45, 0.95] },  // teal/blue shell
-  dark: { primary: [0.10, 0.07, 0.12], secondary: [0.18, 0.12, 0.16] },     // absorbing dust
+  dark: { primary: [0.24, 0.16, 0.13], secondary: [0.34, 0.22, 0.16] },     // dusty brown, occludes stars
 }
 
 function buildNebula(object, type, seed) {
@@ -501,6 +585,8 @@ function computeBoundingRadius(generator, s) {
       return (s.radius || 1) * (s.hasRings ? (s.ringOuter || 2.2) + 0.3 : 1.15)
     case Generator.Star:
       return (s.radius || 1) * Math.max(s.coronaScale || 1.5, 1.6)
+    case Generator.BinaryStar:
+      return (s.separation || 4) + (s.radius || 1) * 1.6
     case Generator.NeutronStar:
       return Math.max((s.radius || 0.5) * 4, 3)
     case Generator.BlackHole:
@@ -511,6 +597,8 @@ function computeBoundingRadius(generator, s) {
       return (s.radius || 5.5) * 1.15
     case Generator.Galaxy:
       return s.radius || 7
+    case Generator.Nebula:
+      return (s.radius || 6) * 1.15
     case Generator.Cluster:
       return (s.radius || 4) * 1.1
     case Generator.Asteroid:
@@ -561,6 +649,9 @@ export function buildAppearance(object) {
     case Generator.Star:
       specific = buildStar(object, type, seed)
       break
+    case Generator.BinaryStar:
+      specific = buildBinaryStar(object, seed)
+      break
     case Generator.NeutronStar:
       specific = buildNeutronStar(object, type, seed)
       break
@@ -575,6 +666,9 @@ export function buildAppearance(object) {
       break
     case Generator.Galaxy:
       specific = buildGalaxy(object, type, seed)
+      break
+    case Generator.Nebula:
+      specific = buildNebula(object, type, seed)
       break
     case Generator.Cluster:
       specific = buildCluster(object, type, seed)

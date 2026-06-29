@@ -26,24 +26,39 @@ function buildSpiral(params, noise3D) {
   const coreColor = new THREE.Color(...(params?.coreColor ?? [1, 0.85, 0.5]))
   const diskColor = new THREE.Color(...(params?.diskColor ?? [0.55, 0.65, 0.95]))
 
+  // A fraction of stars form a dense, bright central bulge so the core reads as
+  // full rather than a thin spindle. The rest populate the spiral arms.
+  const bulgeCount = Math.floor(count * 0.32)
+  const gaussian = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5
+
   for (let i = 0; i < count; i++) {
-    const arm = Math.floor(Math.random() * arms)
-    const armAngle = (arm / arms) * Math.PI * 2
-    const r = Math.pow(Math.random(), 0.5) * radius
-    const spinAngle = r * armSpin
-    const scatter = (Math.random() - 0.5) * r * armWidth
-    const angle = armAngle + spinAngle
-    const x = (r + scatter) * Math.cos(angle) + (Math.random() - 0.5) * 0.5
-    const y = (Math.random() - 0.5) * 0.3 * (1 - r / radius) + (Math.random() - 0.5) * 0.1
-    const z = (r + scatter) * Math.sin(angle) + (Math.random() - 0.5) * 0.5
+    let x, y, z, r
+    if (i < bulgeCount) {
+      // Flattened spheroidal bulge concentrated at the centre.
+      const br = radius * 0.22
+      x = gaussian() * br
+      z = gaussian() * br
+      y = gaussian() * br * 0.55
+      r = Math.sqrt(x * x + z * z)
+    } else {
+      const arm = Math.floor(Math.random() * arms)
+      const armAngle = (arm / arms) * Math.PI * 2
+      r = Math.pow(Math.random(), 0.5) * radius
+      const spinAngle = r * armSpin
+      const scatter = (Math.random() - 0.5) * r * armWidth
+      const angle = armAngle + spinAngle
+      x = (r + scatter) * Math.cos(angle) + (Math.random() - 0.5) * 0.5
+      y = (Math.random() - 0.5) * 0.3 * (1 - r / radius) + (Math.random() - 0.5) * 0.1
+      z = (r + scatter) * Math.sin(angle) + (Math.random() - 0.5) * 0.5
+    }
     positions[i * 3] = x
     positions[i * 3 + 1] = y
     positions[i * 3 + 2] = z
 
-    const coreBlend = Math.max(0, 1 - r / (radius * 0.3))
+    const coreBlend = Math.max(0, 1 - r / (radius * 0.35))
     const c = diskColor.clone().lerp(coreColor, coreBlend)
-    // Dust lanes: darken a fraction of disk stars along the arms.
-    if (dustLanes) {
+    // Dust lanes: darken a fraction of disk stars along the arms (not the bulge).
+    if (dustLanes && i >= bulgeCount) {
       const d = noise3D(x * 0.5, y * 0.5, z * 0.5) * 0.5 + 0.5
       if (d < 0.35 && r > radius * 0.25) c.multiplyScalar(0.35)
     }

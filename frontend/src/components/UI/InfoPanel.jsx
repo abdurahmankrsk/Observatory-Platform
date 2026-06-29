@@ -10,6 +10,7 @@ import { useProceduralGen } from '../../hooks/useProceduralGen'
 import { formatDistance } from '../../utils/astronomyMath'
 import { isInHabitableZone } from '../../utils/colorFromTemperature'
 import { getSpectralClass } from '../../utils/colorFromTemperature'
+import { useTranslation } from '../../i18n'
 
 function DataRow({ label, value, highlight = false }) {
   return (
@@ -31,61 +32,61 @@ function DataRow({ label, value, highlight = false }) {
   )
 }
 
-function ExoplanetInfo({ data }) {
+function ExoplanetInfo({ data, t }) {
   if (!data) return null
   const habitable = isInHabitableZone(data.equilibrium_temp_k)
   return (
     <div>
-      <DataRow label="RADIUS" value={data.radius_earth ? `${data.radius_earth.toFixed(2)} R⊕` : null} />
-      <DataRow label="MASS" value={data.mass_earth ? `${data.mass_earth.toFixed(2)} M⊕` : null} />
-      <DataRow label="ORBITAL PERIOD" value={data.orbital_period_days ? `${data.orbital_period_days.toFixed(1)} days` : null} />
-      <DataRow label="SEMI-MAJOR AXIS" value={data.semi_major_axis_au ? `${data.semi_major_axis_au.toFixed(3)} AU` : null} />
-      <DataRow label="EQUILIBRIUM TEMP" value={data.equilibrium_temp_k ? `${data.equilibrium_temp_k.toFixed(0)} K` : null} />
-      <DataRow label="STAR TEMP" value={data.star_temperature_k ? `${data.star_temperature_k.toFixed(0)} K` : null} />
+      <DataRow label={t('info.radius')} value={data.radius_earth ? `${data.radius_earth.toFixed(2)} R⊕` : null} />
+      <DataRow label={t('info.mass')} value={data.mass_earth ? `${data.mass_earth.toFixed(2)} M⊕` : null} />
+      <DataRow label={t('info.orbitalPeriod')} value={data.orbital_period_days ? `${data.orbital_period_days.toFixed(1)} ${t('info.days')}` : null} />
+      <DataRow label={t('info.semiMajorAxis')} value={data.semi_major_axis_au ? `${data.semi_major_axis_au.toFixed(3)} AU` : null} />
+      <DataRow label={t('info.equilibriumTemp')} value={data.equilibrium_temp_k ? `${data.equilibrium_temp_k.toFixed(0)} K` : null} />
+      <DataRow label={t('info.starTemp')} value={data.star_temperature_k ? `${data.star_temperature_k.toFixed(0)} K` : null} />
       <DataRow
-        label="HABITABLE ZONE"
-        value={habitable ? '✓ POSSIBLY' : '✗ UNLIKELY'}
+        label={t('info.habitableZone')}
+        value={habitable ? t('info.possibly') : t('info.unlikely')}
         highlight={habitable}
       />
     </div>
   )
 }
 
-function StarInfo({ data }) {
+function StarInfo({ data, t }) {
   if (!data) return null
   return (
     <div>
-      <DataRow label="SPECTRAL CLASS" value={data.spectral_type ?? (data.temperature_k ? getSpectralClass(data.temperature_k) : null)} />
-      <DataRow label="TEMPERATURE" value={data.temperature_k ? `${data.temperature_k.toFixed(0)} K` : null} />
-      <DataRow label="RADIUS" value={data.radius_solar ? `${data.radius_solar.toFixed(2)} R☉` : null} />
-      <DataRow label="LUMINOSITY" value={data.luminosity_solar ? `${data.luminosity_solar.toFixed(2)} L☉` : null} />
+      <DataRow label={t('info.spectralClass')} value={data.spectral_type ?? (data.temperature_k ? getSpectralClass(data.temperature_k) : null)} />
+      <DataRow label={t('info.temperature')} value={data.temperature_k ? `${data.temperature_k.toFixed(0)} K` : null} />
+      <DataRow label={t('info.radius')} value={data.radius_solar ? `${data.radius_solar.toFixed(2)} R☉` : null} />
+      <DataRow label={t('info.luminosity')} value={data.luminosity_solar ? `${data.luminosity_solar.toFixed(2)} L☉` : null} />
     </div>
   )
 }
 
-function AsteroidInfo({ data, approach }) {
+function AsteroidInfo({ data, approach, t }) {
   if (!data && !approach) return null
   return (
     <div>
       {data && (
         <>
-          <DataRow label="DIAMETER" value={
+          <DataRow label={t('info.diameter')} value={
             data.diameter_min_km && data.diameter_max_km
               ? `${data.diameter_min_km.toFixed(3)}–${data.diameter_max_km.toFixed(3)} km`
               : null
           } />
           <DataRow
-            label="HAZARDOUS"
-            value={data.is_potentially_hazardous ? '⚠ YES' : 'NO'}
+            label={t('info.hazardous')}
+            value={data.is_potentially_hazardous ? t('info.yes') : t('info.no')}
             highlight={false}
           />
         </>
       )}
       {approach && (
         <>
-          <DataRow label="MISS DISTANCE" value={`${(approach.miss_distance_km / 1e6).toFixed(2)}M km`} />
-          <DataRow label="VELOCITY" value={`${approach.relative_velocity_km_s.toFixed(2)} km/s`} />
-          <DataRow label="APPROACH DATE" value={approach.date} />
+          <DataRow label={t('info.missDistance')} value={`${(approach.miss_distance_km / 1e6).toFixed(2)}M km`} />
+          <DataRow label={t('info.velocity')} value={`${approach.relative_velocity_km_s.toFixed(2)} km/s`} />
+          <DataRow label={t('info.approachDate')} value={approach.date} />
         </>
       )}
     </div>
@@ -94,6 +95,7 @@ function AsteroidInfo({ data, approach }) {
 
 export default function InfoPanel() {
   const panelRef = useRef()
+  const { t } = useTranslation()
   const selectedObject = useObservatoryStore((s) => s.selectedObject)
   const beginFlight = useObservatoryStore((s) => s.beginFlight)
   const returnToObservatory = useObservatoryStore((s) => s.returnToObservatory)
@@ -187,19 +189,19 @@ export default function InfoPanel() {
 
       {/* Type-specific data */}
       {(selectedObject.type === 'exoplanet' || selectedObject.type === 'planet') && (
-        <ExoplanetInfo data={selectedObject.exoplanet} />
+        <ExoplanetInfo data={selectedObject.exoplanet} t={t} />
       )}
-      {selectedObject.type === 'star' && <StarInfo data={selectedObject.star} />}
+      {selectedObject.type === 'star' && <StarInfo data={selectedObject.star} t={t} />}
       {selectedObject.type === 'asteroid' && (
-        <AsteroidInfo data={selectedObject.asteroid} approach={selectedObject.close_approach} />
+        <AsteroidInfo data={selectedObject.asteroid} approach={selectedObject.close_approach} t={t} />
       )}
 
       {/* Coordinates */}
       {(selectedObject.ra != null || selectedObject.dec != null) && (
         <>
           <div className="divider" style={{ margin: '16px 0' }} />
-          <DataRow label="RA" value={selectedObject.ra != null ? `${selectedObject.ra.toFixed(4)}°` : null} />
-          <DataRow label="DEC" value={selectedObject.dec != null ? `${selectedObject.dec.toFixed(4)}°` : null} />
+          <DataRow label={t('info.ra')} value={selectedObject.ra != null ? `${selectedObject.ra.toFixed(4)}°` : null} />
+          <DataRow label={t('info.dec')} value={selectedObject.dec != null ? `${selectedObject.dec.toFixed(4)}°` : null} />
         </>
       )}
 
@@ -212,7 +214,7 @@ export default function InfoPanel() {
           border: '1px solid rgba(79,172,254,0.15)',
           borderRadius: 1,
         }}>
-          <p className="text-label" style={{ marginBottom: 6 }}>DID YOU KNOW</p>
+          <p className="text-label" style={{ marginBottom: 6 }}>{t('info.didYouKnow')}</p>
           <p style={{ color: 'var(--color-grey)', fontSize: '0.8125rem', lineHeight: 1.5 }}>
             {selectedObject.fun_fact}
           </p>
@@ -228,7 +230,7 @@ export default function InfoPanel() {
             style={{ width: '100%', justifyContent: 'center' }}
             onClick={beginFlight}
           >
-            FLY TO {selectedObject.name.split(' ')[0].toUpperCase()}
+            {t('info.flyTo', { name: selectedObject.name.split(' ')[0].toUpperCase() })}
           </button>
         )}
         <button
@@ -237,7 +239,7 @@ export default function InfoPanel() {
           style={{ width: '100%', justifyContent: 'center' }}
           onClick={returnToObservatory}
         >
-          BACK TO OBSERVATORY
+          {t('info.back')}
         </button>
       </div>
 

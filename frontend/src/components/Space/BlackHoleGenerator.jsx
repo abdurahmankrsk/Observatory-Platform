@@ -41,9 +41,11 @@ uniform vec3 uOuterColor;
 varying vec3 vLocalPos;
 
 void main() {
-  float r = length(vLocalPos.xz);
+  // RingGeometry lives in the local XY plane (z = 0), so the radius and angle
+  // must come from xy — using xz collapses to |x| and produces vertical stripes.
+  float r = length(vLocalPos.xy);
   float t = clamp((r - uInner) / (uOuter - uInner), 0.0, 1.0);
-  float angle = atan(vLocalPos.z, vLocalPos.x);
+  float angle = atan(vLocalPos.y, vLocalPos.x);
 
   // Temperature gradient: hot (white) inside → cool (red) outside.
   vec3 color = mix(uInnerColor, uMidColor, smoothstep(0.0, 0.5, t));
@@ -187,8 +189,9 @@ export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
           fragmentShader={`
             uniform vec3 uColor; varying vec3 vN; varying vec3 vV;
             void main(){
-              float f = pow(1.0 - abs(dot(vN, vV)), 4.0);
-              gl_FragColor = vec4(uColor * f * 2.5, f);
+              // Soft, stable photon-ring rim (lower gain avoids bloom flicker).
+              float f = pow(1.0 - abs(dot(vN, vV)), 3.0);
+              gl_FragColor = vec4(uColor * f * 1.4, f * 0.8);
             }`}
         />
       </mesh>

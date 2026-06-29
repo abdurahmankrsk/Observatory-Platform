@@ -136,6 +136,23 @@ describe('buildAppearance — routing + descriptor', () => {
     expect(d.surfaceStyle).toBe('bands')
     expect(d.hasRings).toBe(true)
   })
+  it('every nebula style routes to the nebula generator (not unknown)', () => {
+    const cases = [
+      ['Orion Nebula', 'a stellar nursery', 'emission'],
+      ['NGC 7023', 'a reflection nebula', 'reflection'],
+      ['Ring Nebula', 'a planetary nebula in Lyra', 'planetary'],
+      ['Horsehead', 'a dark nebula of dust', 'dark'],
+    ]
+    for (const [name, description, style] of cases) {
+      const d = buildAppearance({ type: 'nebula', name, description })
+      expect(d.generator).toBe('nebula')
+      expect(d.nebulaStyle).toBe(style)
+    }
+  })
+  it('a star cluster routes to the cluster generator', () => {
+    const d = buildAppearance({ type: 'nebula', name: 'M13', description: 'a globular cluster' })
+    expect(d.generator).toBe('cluster')
+  })
   it('falls back to Unknown with an honest message', () => {
     const d = buildAppearance({ name: 'mystery blob' })
     expect(d.generator).toBe('unknown')
@@ -162,6 +179,56 @@ describe('classify — forwarded SIMBAD otype (live objects)', () => {
   })
   it('otype SNR → SupernovaRemnant', () => {
     expect(classify({ type: 'nebula', name: 'X', otype: 'SNR' }).type).toBe(CelestialType.SupernovaRemnant)
+  })
+})
+
+describe('classify — new coarse types', () => {
+  it('coarse blackhole → BlackHole', () => {
+    expect(classify({ type: 'blackhole', name: 'Sagittarius A*' }).type).toBe(CelestialType.BlackHole)
+  })
+  it('coarse moon → Moon', () => {
+    expect(classify({ type: 'moon', name: 'Europa', description: 'an icy moon of Jupiter' }).type).toBe(CelestialType.Moon)
+  })
+})
+
+describe('classifyPlanetClass — description fallback (solar-system bodies)', () => {
+  it('"banded gas giant" → GasGiant', () => {
+    expect(classifyPlanetClass({ name: 'Jupiter', description: 'a banded gas giant' })).toBe(PlanetClass.GasGiant)
+  })
+  it('"ice giant" → IceGiant', () => {
+    expect(classifyPlanetClass({ name: 'Neptune', description: 'a deep-blue ice giant' })).toBe(PlanetClass.IceGiant)
+  })
+  it('"Red Planet / desert" → DesertWorld', () => {
+    expect(classifyPlanetClass({ name: 'Mars', description: 'The Red Planet, a cold desert world' })).toBe(PlanetClass.DesertWorld)
+  })
+})
+
+describe('buildAppearance — binary + solar bodies', () => {
+  it('Sirius → binary star with two components (white-dwarf companion)', () => {
+    const d = buildAppearance({
+      type: 'star', name: 'Sirius', star: { spectral_type: 'A1V' },
+      description: "The brightest star in Earth's night sky.",
+      fun_fact: 'Sirius is actually a binary system — Sirius A orbited by the white dwarf Sirius B.',
+    })
+    expect(d.celestialType).toBe(CelestialType.BinaryStar)
+    expect(d.generator).toBe('binaryStar')
+    expect(d.stars.length).toBe(2)
+  })
+  it('Jupiter → banded gas giant, no rings', () => {
+    const d = buildAppearance({ id: 'jupiter', name: 'Jupiter', type: 'planet', description: 'a banded gas giant with the Great Red Spot' })
+    expect(d.surfaceStyle).toBe('bands')
+    expect(d.hasRings).toBe(false)
+  })
+  it('Saturn → banded gas giant with prominent rings', () => {
+    const d = buildAppearance({ id: 'saturn', name: 'Saturn', type: 'planet', description: 'a gas giant with spectacular icy rings' })
+    expect(d.surfaceStyle).toBe('bands')
+    expect(d.hasRings).toBe(true)
+  })
+  it('Europa (moon) routes to the planet generator with its own palette', () => {
+    const d = buildAppearance({ id: 'europa', name: 'Europa', type: 'moon', description: 'a smooth icy moon with a cracked crust' })
+    expect(d.celestialType).toBe(CelestialType.Moon)
+    expect(d.generator).toBe('planet')
+    expect(d.radius).toBeLessThan(1) // moons are small
   })
 })
 

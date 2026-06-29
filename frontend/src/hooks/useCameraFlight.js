@@ -131,7 +131,7 @@ export function useCameraFlight() {
    * @param {function} onComplete
    */
   const warpFlight = useCallback(
-    (targetPosition, distanceLY = 10, onComplete) => {
+    (targetPosition, distanceLY = 10, onComplete, arrivalDistance = 6) => {
       killTimeline()
 
       // Duration: 3s for <1 ly, up to 8s for >1000 ly
@@ -143,10 +143,14 @@ export function useCameraFlight() {
       // Start from current camera position
       const startPos = camera.position.clone()
 
-      // Arrival position: slightly offset from target for orbiting
-      const arrivalPos = targetPosition.clone()
-        .normalize()
-        .multiplyScalar(targetPosition.length() + 3)
+      // Arrival position: a three-quarter view offset from the target. The object
+      // sits at the origin, so normalising a zero vector is useless — instead fly
+      // to a fixed viewing direction at a distance scaled to the object's size
+      // (arrivalDistance), looking slightly down so disks/rings read as disks.
+      const dirToTarget = targetPosition.length() > 0.001
+        ? targetPosition.clone().normalize()
+        : new THREE.Vector3(0.3, 0.5, 1).normalize()
+      const arrivalPos = dirToTarget.multiplyScalar(targetPosition.length() + arrivalDistance)
 
       const proxy = {
         x: startPos.x,

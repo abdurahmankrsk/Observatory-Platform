@@ -108,6 +108,7 @@ uniform float uAtmosphereThickness;
 uniform float uSurfaceStyle;   // 0 = terran, 1 = banded (gas/ice giant), 2 = lava
 uniform vec3 uBandColorA;
 uniform vec3 uBandColorB;
+uniform float uPolarIce;       // 1 = polar ice caps, 0 = none (airless rock)
 
 varying vec2 vUv;
 varying vec3 vNormal;
@@ -127,7 +128,7 @@ void main() {
   // — Terran surface (rocky/ocean worlds) —
   float oceanMask = smoothstep(0.42, 0.48, terrain);
   vec3 terran = mix(uOceanColor, uTerrainColor, oceanMask);
-  terran = mix(terran, uIceColor, poleBlend);
+  terran = mix(terran, uIceColor, poleBlend * uPolarIce);
 
   // — Banded surface (gas / ice giants): latitude bands warped by turbulence,
   //   plus a couple of swirling storm ovals. —
@@ -191,7 +192,8 @@ uniform float uOpacity;
 uniform float uSeed;
 varying vec3 vLocal;
 void main() {
-  float r = length(vLocal.xz);
+  // RingGeometry is in the local XY plane (z = 0) — radius is xy, not xz.
+  float r = length(vLocal.xy);
   float t = clamp((r - uInner) / (uOuter - uInner), 0.0, 1.0);
   // Fine banded structure with a few darker gaps.
   float fine = 0.5 + 0.5 * sin(t * 90.0 + uSeed * 20.0);
@@ -214,8 +216,10 @@ function RingSystem({ params }) {
     uSeed: { value: params?.terrainSeed ?? 0.5 },
   }), [params, inner, outer])
   return (
-    <mesh rotation={[-Math.PI / 2 + 0.35, 0, 0]}>
-      <ringGeometry args={[inner, outer, 128, 4]} />
+    // Nearly equatorial (slight tilt); the orbit camera's elevation shows it as
+    // a flat ellipse around the planet rather than edge-on.
+    <mesh rotation={[-Math.PI / 2 + 0.14, 0, 0.12]}>
+      <ringGeometry args={[inner, outer, 160, 4]} />
       <shaderMaterial
         vertexShader={ringVertexShader}
         fragmentShader={ringFragmentShader}
@@ -284,10 +288,12 @@ export default function ProceduralPlanet({ params, position = [0, 0, 0] }) {
     uTerrainColor: { value: params?.terrainColor ?? new THREE.Color(0.3, 0.5, 0.2) },
     uIceColor: { value: params?.iceColor ?? new THREE.Color(0.9, 0.95, 1.0) },
     uAtmosphereColor: { value: params?.atmosphereColor ?? new THREE.Color(0.4, 0.65, 1.0) },
-    uAtmosphereThickness: { value: params?.atmosphereThickness ?? 0.08 },
+    // Airless bodies (hasAtmosphere === false) get zero atmospheric rim glow.
+    uAtmosphereThickness: { value: params?.hasAtmosphere === false ? 0 : (params?.atmosphereThickness ?? 0.08) },
     uSurfaceStyle: { value: surfaceStyleValue },
     uBandColorA: { value: params?.bandColorA ?? new THREE.Color(0.6, 0.45, 0.3) },
     uBandColorB: { value: params?.bandColorB ?? new THREE.Color(0.8, 0.65, 0.45) },
+    uPolarIce: { value: params?.polarIce === false ? 0 : 1 },
   }), [params, surfaceStyleValue])
 
   const cloudUniforms = useMemo(() => ({

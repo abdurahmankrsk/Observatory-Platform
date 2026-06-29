@@ -35,6 +35,11 @@ const useObservatoryStore = create((set, get) => ({
   telescopeDec: 0,
   isAutoRotating: true,
 
+  // ── Language / i18n ──────────────────────────────────────────────────────
+  // 'en' | 'bs' — persisted so the choice survives scene changes and reloads.
+  language:
+    (typeof localStorage !== 'undefined' && localStorage.getItem('lang')) || 'en',
+
   // ── Actions ──────────────────────────────────────────────────────────────
   setScene: (scene) => set({ scene }),
 
@@ -80,6 +85,11 @@ const useObservatoryStore = create((set, get) => ({
   setInfoPanelOpen: (open) => set({ isInfoPanelOpen: open }),
   setTelescopePointing: (ra, dec) => set({ telescopeRA: ra, telescopeDec: dec }),
   toggleAutoRotate: () => set((state) => ({ isAutoRotating: !state.isAutoRotating })),
+
+  setLanguage: (language) => {
+    try { localStorage.setItem('lang', language) } catch { /* ignore */ }
+    set({ language })
+  },
 }))
 
 export default useObservatoryStore

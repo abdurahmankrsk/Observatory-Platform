@@ -108,7 +108,7 @@ function WarpLines({ active }) {
 }
 
 // ── Flight Camera Handler ──────────────────────────────────────────────────
-function FlightCamera() {
+function FlightCamera({ frameRadius = 6 }) {
   const { camera } = useThree()
   const { flyIntoObservatory, warpFlight } = useCameraFlight()
   const scene = useObservatoryStore((s) => s.scene)
@@ -118,7 +118,8 @@ function FlightCamera() {
   useEffect(() => {
     if (scene === 'flying' && selectedObject) {
       const dist = selectedObject.distance_ly ?? 10
-      warpFlight(new THREE.Vector3(0, 0, 0), dist, arriveAtObject)
+      // Arrive at ~2.6× the object's extent so it frames nicely on arrival.
+      warpFlight(new THREE.Vector3(0, 0, 0), dist, arriveAtObject, frameRadius * 2.6)
     }
   }, [scene, selectedObject])
 
@@ -155,15 +156,17 @@ export default function SpaceScene() {
         {/* Warp effect during flight */}
         <WarpLines active={isFlying} />
 
-        {/* The celestial object — procedurally generated from its metadata */}
+        {/* The celestial object — procedurally generated from its metadata.
+            Keyed on the object id so switching objects always remounts the
+            generator with fresh geometry/shader uniforms. */}
         {isViewing && selectedObject && (
           <Suspense fallback={null}>
-            <ObjectGenerator object={selectedObject} />
+            <ObjectGenerator key={selectedObject.id} object={selectedObject} />
           </Suspense>
         )}
 
         {/* Camera flight controller */}
-        <FlightCamera />
+        <FlightCamera frameRadius={frameRadius} />
 
         {/* OrbitControls — only active when viewing */}
         {isViewing && (

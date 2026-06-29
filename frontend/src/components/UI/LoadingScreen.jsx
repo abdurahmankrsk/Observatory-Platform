@@ -6,18 +6,13 @@ import React, { useEffect, useRef, useState } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
 import { formatDistance } from '../../utils/astronomyMath'
+import { useTranslation } from '../../i18n'
 
-const WARP_MESSAGES = [
-  'CALCULATING TRAJECTORY...',
-  'ENGAGING WARP DRIVE...',
-  'CROSSING INTERSTELLAR VOID...',
-  'APPROACHING TARGET SYSTEM...',
-  'DECELERATING...',
-  'ACHIEVING STABLE ORBIT...',
-]
+const WARP_MESSAGE_COUNT = 6
 
 export default function LoadingScreen() {
   const selectedObject = useObservatoryStore((s) => s.selectedObject)
+  const { t } = useTranslation()
   const containerRef = useRef()
   const progressRef = useRef()
   const [msgIndex, setMsgIndex] = useState(0)
@@ -27,7 +22,7 @@ export default function LoadingScreen() {
     // Cycle through warp messages
     let i = 0
     const interval = setInterval(() => {
-      i = (i + 1) % WARP_MESSAGES.length
+      i = (i + 1) % WARP_MESSAGE_COUNT
       setMsgIndex(i)
     }, 1200)
 
@@ -127,7 +122,7 @@ export default function LoadingScreen() {
 
       {/* Warp status message */}
       <p className="text-label" style={{ color: 'var(--color-grey)', marginBottom: 24, minHeight: 20 }}>
-        {WARP_MESSAGES[msgIndex]}
+        {t(`warp.${msgIndex}`)}
       </p>
 
       {/* Progress bar */}

@@ -10,6 +10,7 @@
  */
 import React, { Component, Suspense } from 'react'
 import useObservatoryStore from './store/observatoryStore'
+import { useTranslation, translate } from './i18n'
 
 import StartScreen from './components/UI/StartScreen'
 import LoadingScreen from './components/UI/LoadingScreen'
@@ -37,6 +38,8 @@ class SceneErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      // Class component can't use the hook; read the language directly.
+      const lang = useObservatoryStore.getState().language
       return (
         <div className="fixed inset-0 flex flex-col items-center justify-center"
           style={{ background: 'var(--color-void)' }}>
@@ -48,19 +51,19 @@ class SceneErrorBoundary extends Component {
             textAlign: 'center',
           }}>
             <p className="text-label" style={{ color: 'var(--color-amber)', marginBottom: 12 }}>
-              3D SCENE ERROR
+              {translate(lang, 'app.sceneError')}
             </p>
             <p style={{ color: 'var(--color-grey)', fontSize: '0.875rem', marginBottom: 20 }}>
-              Your device may not support WebGL, or the 3D scene encountered an error.
+              {translate(lang, 'app.sceneErrorDesc')}
             </p>
             <p className="text-mono" style={{ color: 'var(--color-dim)', fontSize: '0.75rem', marginBottom: 20 }}>
-              {this.state.error?.message ?? 'Unknown error'}
+              {this.state.error?.message ?? translate(lang, 'app.unknownError')}
             </p>
             <button
               className="btn-ghost"
               onClick={() => window.location.reload()}
             >
-              RELOAD
+              {translate(lang, 'app.reload')}
             </button>
           </div>
         </div>
@@ -85,6 +88,7 @@ function checkWebGL() {
 
 // ── Main App ───────────────────────────────────────────────────────────────
 function AppContent() {
+  const { t } = useTranslation()
   const scene = useObservatoryStore((s) => s.scene)
   const isAutoRotating = useObservatoryStore((s) => s.isAutoRotating)
   const toggleAutoRotate = useObservatoryStore((s) => s.toggleAutoRotate)
@@ -98,8 +102,7 @@ function AppContent() {
           ASTRO OBSERVATORY
         </h1>
         <p style={{ color: 'var(--color-grey)', textAlign: 'center', maxWidth: 400 }}>
-          AstroObservatory requires WebGL support to render 3D scenes.
-          Please use a modern browser (Chrome, Firefox, Edge, or Safari 15+).
+          {t('app.webglRequired')}
         </p>
       </div>
     )
@@ -188,7 +191,7 @@ function AppContent() {
               transition: 'all 0.2s'
             }}
           >
-            ROTATION: {isAutoRotating ? 'ON' : 'OFF'}
+            {isAutoRotating ? t('app.rotationOn') : t('app.rotationOff')}
           </button>
         </div>
       )}
@@ -202,7 +205,7 @@ function AppContent() {
           zIndex: 30,
         }}>
           <p className="text-label" style={{ color: 'rgba(79,172,254,0.4)', fontSize: '0.55rem', textAlign: 'right' }}>
-            {scene.toUpperCase()}
+            {t(`scene.${scene}`)}
           </p>
         </div>
       )}

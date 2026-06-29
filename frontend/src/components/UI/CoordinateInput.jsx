@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
 import { useIdentifyMutation } from '../../hooks/useNASAData'
+import { useTranslation } from '../../i18n'
 
 export default function CoordinateInput() {
   const panelRef = useRef()
@@ -13,6 +14,7 @@ export default function CoordinateInput() {
   const [dec, setDec] = useState('')
   const [error, setError] = useState('')
   const [note, setNote] = useState('')
+  const { t } = useTranslation()
 
   const setTelescopePointing = useObservatoryStore((s) => s.setTelescopePointing)
   const targetObject = useObservatoryStore((s) => s.targetObject)
@@ -36,11 +38,11 @@ export default function CoordinateInput() {
     const decVal = parseFloat(dec)
 
     if (isNaN(raVal) || raVal < 0 || raVal > 360) {
-      setError('RA must be 0–360°')
+      setError(t('coord.raError'))
       return
     }
     if (isNaN(decVal) || decVal < -90 || decVal > 90) {
-      setError('Dec must be -90 to +90°')
+      setError(t('coord.decError'))
       return
     }
 
@@ -52,7 +54,7 @@ export default function CoordinateInput() {
       ra: raVal,
       dec: decVal,
       distance_ly: 1000,
-      description: 'A custom sky coordinate entered by the observer.',
+      description: t('coord.customDesc'),
     }
 
     // Immediate feedback: swing the telescope while the lookup runs.
@@ -61,15 +63,18 @@ export default function CoordinateInput() {
     try {
       const data = await identifyMutation.mutateAsync({ ra: raVal, dec: decVal })
       if (data?.found && data.object) {
-        const sep = data.separation_deg != null ? ` (${data.separation_deg.toFixed(3)}° away)` : ''
-        setNote(`Found: ${data.object.name}${sep}`)
+        setNote(
+          data.separation_deg != null
+            ? t('coord.foundAway', { name: data.object.name, deg: data.separation_deg.toFixed(3) })
+            : t('coord.found', { name: data.object.name })
+        )
         targetObject(data.object)
       } else {
-        setNote(`No catalogued object within ${data?.radius_deg ?? 0.1}° — showing empty field.`)
+        setNote(t('coord.noObject', { deg: data?.radius_deg ?? 0.1 }))
         targetObject(coordObj)
       }
     } catch (e) {
-      setNote('Lookup failed — showing empty field.')
+      setNote(t('coord.lookupFailed'))
       targetObject(coordObj)
     }
   }
@@ -88,11 +93,11 @@ export default function CoordinateInput() {
         opacity: 0,
       }}
     >
-      <p className="text-label" style={{ marginBottom: 16 }}>COORDINATE INPUT</p>
+      <p className="text-label" style={{ marginBottom: 16 }}>{t('coord.title')}</p>
 
       <div style={{ marginBottom: 12 }}>
         <label className="text-label" style={{ display: 'block', marginBottom: 4, color: 'var(--color-dim)' }}>
-          RA (0 – 360°)
+          {t('coord.raLabel')}
         </label>
         <input
           id="ra-input"
@@ -109,7 +114,7 @@ export default function CoordinateInput() {
 
       <div style={{ marginBottom: 16 }}>
         <label className="text-label" style={{ display: 'block', marginBottom: 4, color: 'var(--color-dim)' }}>
-          Dec (-90 – +90°)
+          {t('coord.decLabel')}
         </label>
         <input
           id="dec-input"
@@ -144,7 +149,7 @@ export default function CoordinateInput() {
         disabled={identifyMutation.isPending}
       >
         {identifyMutation.isPending && <span className="spinner" />}
-        {identifyMutation.isPending ? 'IDENTIFYING…' : 'POINT TELESCOPE'}
+        {identifyMutation.isPending ? t('coord.identifying') : t('coord.point')}
       </button>
 
       {/* Corner decorations */}

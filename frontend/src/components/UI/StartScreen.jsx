@@ -8,6 +8,7 @@ import { Canvas } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
+import { useTranslation } from '../../i18n'
 
 function StarField() {
   return (
@@ -26,8 +27,9 @@ export default function StartScreen() {
   const lineRef = useRef()
   
   const [langOpen, setLangOpen] = useState(false)
-  const [lang, setLang] = useState('en')
 
+  const { t, lang } = useTranslation()
+  const setLanguage = useObservatoryStore((s) => s.setLanguage)
   const enterObservatory = useObservatoryStore((s) => s.enterObservatory)
 
   useEffect(() => {
@@ -110,7 +112,7 @@ export default function StartScreen() {
           style={{ marginBottom: 16, letterSpacing: '0.4em', color: 'var(--color-blue)', opacity: 0.7 }}
           ref={subtitleRef}
         >
-          SYSTEM ONLINE · COORDINATES LOCKED
+          {t('start.status')}
         </p>
 
         {/* Logo */}
@@ -147,8 +149,8 @@ export default function StartScreen() {
           }}
           ref={subtitleRef}
         >
-          Explore exoplanets, stars, nebulae, and asteroids
-          <br />powered by real NASA data
+          {t('start.subtitle1')}
+          <br />{t('start.subtitle2')}
         </p>
 
         {/* Actions Container */}
@@ -160,7 +162,7 @@ export default function StartScreen() {
             style={{ fontSize: '0.875rem', padding: '14px 40px' }}
             onClick={handleEnter}
           >
-            <span>ENTER OBSERVATORY</span>
+            <span>{t('start.enter')}</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -187,7 +189,7 @@ export default function StartScreen() {
                 ) : (
                   <img src="https://flagcdn.com/ba.svg" width="16" alt="Bosnia" style={{ borderRadius: '1px' }} />
                 )}
-                <span>{lang === 'en' ? 'English' : 'Bosnian'}</span>
+                <span>{lang === 'en' ? 'English' : 'Bosanski'}</span>
               </div>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" strokeWidth="2" strokeLinecap="round"/></svg>
             </button>
@@ -203,7 +205,7 @@ export default function StartScreen() {
                 }}
               >
                 <button
-                  onClick={() => { setLang('en'); setLangOpen(false); }}
+                  onClick={() => { setLanguage('en'); setLangOpen(false); }}
                   className="text-mono flex items-center gap-2 w-full text-left hover:bg-white/5"
                   style={{ padding: '8px 12px', fontSize: '0.75rem', color: 'var(--color-grey)', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
                 >
@@ -211,12 +213,12 @@ export default function StartScreen() {
                   English
                 </button>
                 <button
-                  onClick={() => { setLang('bs'); setLangOpen(false); }}
+                  onClick={() => { setLanguage('bs'); setLangOpen(false); }}
                   className="text-mono flex items-center gap-2 w-full text-left hover:bg-white/5"
                   style={{ borderTop: '1px solid rgba(79, 172, 254, 0.1)', padding: '8px 12px', fontSize: '0.75rem', color: 'var(--color-grey)', background: 'transparent', borderBottom: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
                 >
                   <img src="https://flagcdn.com/ba.svg" width="16" alt="Bosnia" style={{ borderRadius: '1px' }} />
-                  Bosnian
+                  Bosanski
                 </button>
               </div>
             )}

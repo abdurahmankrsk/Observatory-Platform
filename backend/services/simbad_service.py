@@ -8,7 +8,13 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 import httpx
 
-from models.schemas import CelestialObject, StarData, StarResponse
+from models.schemas import (
+    CelestialObject,
+    StarData,
+    StarResponse,
+    AsteroidData,
+    AsteroidResponse,
+)
 
 
 _cache: Dict[str, Tuple[Any, float]] = {}
@@ -107,8 +113,8 @@ KNOWN_OBJECTS: Dict[str, CelestialObject] = {
     "sagittarius a*": StarResponse(
         id="sagittarius_a_star",
         name="Sagittarius A*",
-        type="star",
-        otype="BH",  # frontend classifier → BlackHole
+        type="blackhole",  # distinct coarse type → BlackHole (not a star)
+        otype="BH",
         ra=266.41683,
         dec=-29.00781,
         distance_ly=26673,
@@ -118,7 +124,7 @@ KNOWN_OBJECTS: Dict[str, CelestialObject] = {
     "sgr a*": StarResponse(
         id="sagittarius_a_star",
         name="Sagittarius A*",
-        type="star",
+        type="blackhole",
         otype="BH",
         ra=266.41683,
         dec=-29.00781,
@@ -208,14 +214,40 @@ KNOWN_OBJECTS: Dict[str, CelestialObject] = {
     ),
 }
 
-# Solar system objects (approximate current positions, RA/Dec will be simulated)
+# Solar system objects (approximate current positions, RA/Dec will be simulated).
+# Descriptions intentionally contain classification hints ("gas giant", "ice
+# giant", "Red Planet", …) that the frontend planet classifier reads.
 SOLAR_SYSTEM: Dict[str, CelestialObject] = {
+    "mercury": CelestialObject(
+        id="mercury",
+        name="Mercury",
+        type="planet",
+        distance_au=0.387,
+        description="The smallest planet and closest to the Sun — a cratered, airless rocky world.",
+        fun_fact="Mercury has almost no atmosphere, so its surface swings from 430°C in daylight to -180°C at night.",
+    ),
+    "venus": CelestialObject(
+        id="venus",
+        name="Venus",
+        type="planet",
+        distance_au=0.723,
+        description="A rocky world shrouded in thick sulfuric-acid clouds — the hottest planet in the solar system.",
+        fun_fact="Venus's runaway greenhouse atmosphere keeps its surface at about 465°C, hot enough to melt lead.",
+    ),
+    "earth": CelestialObject(
+        id="earth",
+        name="Earth",
+        type="planet",
+        distance_au=1.0,
+        description="Our home — an ocean world with continents, water clouds and the only known life in the universe.",
+        fun_fact="Earth is the only planet not named after a Greek or Roman deity.",
+    ),
     "mars": CelestialObject(
         id="mars",
         name="Mars",
         type="planet",
         distance_au=1.524,
-        description="The Red Planet, fourth from the Sun, home to Olympus Mons — the largest volcano in the solar system.",
+        description="The Red Planet, a cold desert world, home to Olympus Mons — the largest volcano in the solar system.",
         fun_fact="A day on Mars (a sol) is 24 hours and 37 minutes — almost the same as Earth.",
     ),
     "jupiter": CelestialObject(
@@ -223,7 +255,7 @@ SOLAR_SYSTEM: Dict[str, CelestialObject] = {
         name="Jupiter",
         type="planet",
         distance_au=5.203,
-        description="The largest planet in our solar system, a gas giant with the famous Great Red Spot.",
+        description="The largest planet in our solar system, a banded gas giant with the famous Great Red Spot.",
         fun_fact="Jupiter's Great Red Spot is a storm that has been raging for at least 350 years.",
     ),
     "saturn": CelestialObject(
@@ -234,13 +266,122 @@ SOLAR_SYSTEM: Dict[str, CelestialObject] = {
         description="The ringed jewel of our solar system, a gas giant with spectacular icy rings.",
         fun_fact="Saturn's rings are mostly made of ice particles — some as small as grains of sand, others as large as mountains.",
     ),
+    "uranus": CelestialObject(
+        id="uranus",
+        name="Uranus",
+        type="planet",
+        distance_au=19.19,
+        description="A pale cyan ice giant tipped on its side, with faint rings and a methane-rich atmosphere.",
+        fun_fact="Uranus rotates almost on its side, so each pole gets about 42 years of continuous sunlight then 42 years of darkness.",
+    ),
     "neptune": CelestialObject(
         id="neptune",
         name="Neptune",
         type="planet",
         distance_au=30.07,
-        description="The farthest planet from the Sun, an ice giant with the strongest winds in the solar system.",
+        description="The farthest planet from the Sun, a deep-blue ice giant with the strongest winds in the solar system.",
         fun_fact="Winds on Neptune can reach 2,100 km/h — faster than the speed of sound on Earth.",
+    ),
+    # ── Dwarf planets ──
+    "pluto": CelestialObject(
+        id="pluto",
+        name="Pluto",
+        type="planet",
+        distance_au=39.48,
+        description="A dwarf planet in the Kuiper Belt — an icy, rocky world with a nitrogen-ice heart.",
+        fun_fact="Pluto is smaller than Earth's Moon, and one Pluto year lasts 248 Earth years.",
+    ),
+    "ceres": CelestialObject(
+        id="ceres",
+        name="Ceres",
+        type="planet",
+        distance_au=2.77,
+        description="The largest object in the asteroid belt and the closest dwarf planet — a rocky, icy world.",
+        fun_fact="Ceres may hold more fresh water than all of Earth's rivers and lakes, locked away as ice.",
+    ),
+    "eris": CelestialObject(
+        id="eris",
+        name="Eris",
+        type="planet",
+        distance_au=67.8,
+        description="A distant, highly reflective icy dwarf planet — its discovery prompted Pluto's reclassification.",
+        fun_fact="Eris is so far away that the Sun appears as just a very bright star from its frozen surface.",
+    ),
+}
+
+# Major natural satellites. type='moon' is a distinct category the frontend maps
+# to CelestialType.Moon; descriptions carry the visual hints (icy, volcanic, …).
+MOONS: Dict[str, CelestialObject] = {
+    "moon": CelestialObject(
+        id="moon", name="The Moon (Luna)", type="moon", distance_au=0.00257,
+        description="Earth's only natural satellite — a grey, heavily cratered rocky world with no atmosphere.",
+        fun_fact="The Moon is slowly drifting away from Earth at about 3.8 cm per year.",
+    ),
+    "luna": CelestialObject(
+        id="moon", name="The Moon (Luna)", type="moon", distance_au=0.00257,
+        description="Earth's only natural satellite — a grey, heavily cratered rocky world with no atmosphere.",
+        fun_fact="The Moon is slowly drifting away from Earth at about 3.8 cm per year.",
+    ),
+    "phobos": CelestialObject(
+        id="phobos", name="Phobos", type="moon", distance_au=1.524,
+        description="The larger, inner moon of Mars — a small, dark, heavily cratered potato-shaped rock.",
+        fun_fact="Phobos orbits Mars so fast it rises in the west and sets in the east twice a day.",
+    ),
+    "deimos": CelestialObject(
+        id="deimos", name="Deimos", type="moon", distance_au=1.524,
+        description="The smaller, outer moon of Mars — a tiny, dark, smooth-looking cratered rock.",
+        fun_fact="Deimos is so small that from its surface you could throw a rock fast enough to escape into space.",
+    ),
+    "io": CelestialObject(
+        id="io", name="Io", type="moon", distance_au=5.203,
+        description="Jupiter's innermost Galilean moon — the most volcanically active world in the solar system, painted in sulfur yellows and molten reds.",
+        fun_fact="Io has over 400 active volcanoes, some flinging plumes 500 km above its surface.",
+    ),
+    "europa": CelestialObject(
+        id="europa", name="Europa", type="moon", distance_au=5.203,
+        description="A smooth icy moon of Jupiter, its cracked white crust hiding a global ocean of liquid water.",
+        fun_fact="Europa's subsurface ocean may contain twice as much water as all of Earth's oceans combined.",
+    ),
+    "ganymede": CelestialObject(
+        id="ganymede", name="Ganymede", type="moon", distance_au=5.203,
+        description="Jupiter's largest moon and the biggest in the solar system — a grooved mix of grey rock and dirty ice.",
+        fun_fact="Ganymede is larger than the planet Mercury and is the only moon with its own magnetic field.",
+    ),
+    "callisto": CelestialObject(
+        id="callisto", name="Callisto", type="moon", distance_au=5.203,
+        description="Jupiter's outermost Galilean moon — a dark, ancient, extremely heavily cratered icy world.",
+        fun_fact="Callisto's surface is the most heavily cratered of any object in the solar system.",
+    ),
+    "titan": CelestialObject(
+        id="titan", name="Titan", type="moon", distance_au=9.537,
+        description="Saturn's largest moon — wrapped in a thick orange nitrogen haze, with lakes of liquid methane.",
+        fun_fact="Titan is the only moon with a dense atmosphere and the only other place with stable surface liquid.",
+    ),
+    "enceladus": CelestialObject(
+        id="enceladus", name="Enceladus", type="moon", distance_au=9.537,
+        description="A tiny, brilliantly white icy moon of Saturn that erupts geysers of water from its south pole.",
+        fun_fact="Enceladus reflects almost 100% of the sunlight that hits it, making it one of the brightest worlds in the solar system.",
+    ),
+    "triton": CelestialObject(
+        id="triton", name="Triton", type="moon", distance_au=30.07,
+        description="Neptune's largest moon — a pinkish, icy world with nitrogen geysers, orbiting backwards.",
+        fun_fact="Triton orbits Neptune the 'wrong' way, suggesting it was a Kuiper Belt object captured by Neptune's gravity.",
+    ),
+}
+
+# A few notable asteroids for the popular list / search.
+ASTEROIDS: Dict[str, CelestialObject] = {
+    "bennu": AsteroidResponse(
+        id="bennu", name="101955 Bennu", type="asteroid", distance_au=1.13,
+        description="A small, dark, carbon-rich near-Earth asteroid visited by NASA's OSIRIS-REx mission.",
+        fun_fact="OSIRIS-REx grabbed a sample of Bennu in 2020 and returned it to Earth in 2023.",
+        asteroid=AsteroidData(diameter_min_km=0.48, diameter_max_km=0.51, is_potentially_hazardous=True, absolute_magnitude=20.9),
+    ),
+    "vesta": AsteroidResponse(
+        id="vesta", name="4 Vesta", type="asteroid", distance_au=2.36,
+        description="One of the largest bodies in the asteroid belt — a bright, rocky, differentiated protoplanet.",
+        fun_fact="Vesta is the brightest asteroid and is occasionally visible from Earth with the naked eye.",
+        asteroid=AsteroidData(diameter_min_km=525.0, diameter_max_km=525.0, is_potentially_hazardous=False, absolute_magnitude=3.2),
     ),
 }
 
@@ -248,16 +389,18 @@ SOLAR_SYSTEM: Dict[str, CelestialObject] = {
 async def search_simbad(query: str) -> Optional[CelestialObject]:
     """Search SIMBAD database for a named astronomical object."""
     query_lower = query.lower().strip()
+    # Also try a form with a leading "the " stripped ("the moon" → "moon").
+    query_alt = query_lower[4:].strip() if query_lower.startswith("the ") else query_lower
 
-    # Check known objects first (instant response)
-    if query_lower in KNOWN_OBJECTS:
-        return KNOWN_OBJECTS[query_lower]
+    # Check the curated catalogs first (instant response). Exact match for the
+    # short-named bodies (planets/moons/asteroids) to avoid false substring hits.
+    for catalog in (KNOWN_OBJECTS, SOLAR_SYSTEM, MOONS, ASTEROIDS):
+        if query_lower in catalog:
+            return catalog[query_lower]
+        if query_alt in catalog:
+            return catalog[query_alt]
 
-    # Check solar system
-    if query_lower in SOLAR_SYSTEM:
-        return SOLAR_SYSTEM[query_lower]
-
-    # Partial match in known objects
+    # Partial match in the deep-sky known objects (longer, constellation-style names)
     for key, obj in KNOWN_OBJECTS.items():
         if query_lower in key or key in query_lower:
             return obj
@@ -523,8 +666,12 @@ def get_popular_objects() -> List[CelestialObject]:
         "crab nebula",
         "pleiades",
     ]
-    solar_keys = ["mars", "jupiter", "saturn", "neptune"]
+    solar_keys = ["earth", "mars", "jupiter", "saturn", "neptune"]
+    moon_keys = ["moon", "europa"]
+    asteroid_keys = ["bennu"]
 
     results = [KNOWN_OBJECTS[k] for k in popular_keys if k in KNOWN_OBJECTS]
     results += [SOLAR_SYSTEM[k] for k in solar_keys if k in SOLAR_SYSTEM]
+    results += [MOONS[k] for k in moon_keys if k in MOONS]
+    results += [ASTEROIDS[k] for k in asteroid_keys if k in ASTEROIDS]
     return results

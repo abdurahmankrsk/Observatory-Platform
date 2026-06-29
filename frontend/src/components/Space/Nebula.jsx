@@ -112,6 +112,21 @@ export default function Nebula({ params, position = [0, 0, 0] }) {
 
   return (
     <group ref={groupRef} position={position}>
+      {/* Dark nebulae are silhouetted against a faint glowing-hydrogen backdrop */}
+      {absorbing && (
+        <mesh>
+          <sphereGeometry args={[nebulaRadius * 2.2, 24, 24]} />
+          <meshBasicMaterial
+            color={new THREE.Color(0.5, 0.12, 0.16)}
+            transparent
+            opacity={0.18}
+            side={THREE.BackSide}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+
       {/* Primary nebula cloud */}
       <points ref={points1Ref} geometry={geo1}>
         <pointsMaterial

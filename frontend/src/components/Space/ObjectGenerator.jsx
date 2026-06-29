@@ -19,6 +19,7 @@ import { Generator } from '../../procedural/CelestialType'
 import ProceduralPlanet from './ProceduralPlanet'
 import ProceduralAsteroid from './ProceduralAsteroid'
 import Star from './Star'
+import BinaryStarGenerator from './BinaryStarGenerator'
 import Nebula from './Nebula'
 import OrbitalPath from './OrbitalPath'
 import GalaxyGenerator from './GalaxyGenerator'
@@ -53,6 +54,9 @@ export default function ObjectGenerator({ object, position = [0, 0, 0] }) {
     case Generator.Star:
       return <Star params={params} position={position} />
 
+    case Generator.BinaryStar:
+      return <BinaryStarGenerator params={params} position={position} />
+
     case Generator.NeutronStar:
       return <NeutronStarGenerator params={params} position={position} />
 
@@ -67,6 +71,9 @@ export default function ObjectGenerator({ object, position = [0, 0, 0] }) {
 
     case Generator.Galaxy:
       return <GalaxyGenerator params={params} position={position} />
+
+    case Generator.Nebula:
+      return <Nebula params={params} position={position} />
 
     case Generator.Cluster:
       return <StarClusterGenerator params={params} position={position} />

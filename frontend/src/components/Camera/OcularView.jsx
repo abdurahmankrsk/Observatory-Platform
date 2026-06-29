@@ -5,9 +5,11 @@
 import React, { useEffect, useRef } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
+import { useTranslation } from '../../i18n'
 
 export default function OcularView() {
   const containerRef = useRef()
+  const { t } = useTranslation()
   const scene = useObservatoryStore((s) => s.scene)
   const isTargeting = scene === 'targeting'
 
@@ -105,7 +107,7 @@ export default function OcularView() {
         textAlign: 'center',
       }}>
         <p className="text-label" style={{ color: 'rgba(79,172,254,0.4)', fontSize: '0.6rem', letterSpacing: '0.3em' }}>
-          ATMOSPHERIC SEEING: GOOD
+          {t('ocular.seeing')}
         </p>
       </div>
     </div>

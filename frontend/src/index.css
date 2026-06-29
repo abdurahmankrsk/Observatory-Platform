@@ -298,11 +298,19 @@ canvas {
   letter-spacing: 0.15em;
   text-transform: uppercase;
   border-radius: 1px;
+  /* Default styling so any unmapped type still reads as a styled chip. */
+  color: var(--color-grey);
+  background: rgba(140, 163, 192, 0.08);
+  border: 1px solid rgba(140, 163, 192, 0.25);
 }
 
 .badge--planet { color: #39D353; background: rgba(57, 211, 83, 0.1); border: 1px solid rgba(57, 211, 83, 0.3); }
 .badge--exoplanet { color: #4FACFE; background: rgba(79, 172, 254, 0.1); border: 1px solid rgba(79, 172, 254, 0.3); }
+.badge--moon { color: #C9D1D9; background: rgba(201, 209, 217, 0.08); border: 1px solid rgba(201, 209, 217, 0.25); }
 .badge--asteroid { color: #FF6B35; background: rgba(255, 107, 53, 0.1); border: 1px solid rgba(255, 107, 53, 0.3); }
+.badge--comet { color: #67E8F9; background: rgba(103, 232, 249, 0.1); border: 1px solid rgba(103, 232, 249, 0.3); }
 .badge--star { color: #FFD700; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); }
+.badge--blackhole { color: #B4D9FF; background: rgba(180, 217, 255, 0.1); border: 1px solid rgba(180, 217, 255, 0.35); }
 .badge--nebula { color: #C084FC; background: rgba(192, 132, 252, 0.1); border: 1px solid rgba(192, 132, 252, 0.3); }
 .badge--galaxy { color: #FB923C; background: rgba(251, 146, 60, 0.1); border: 1px solid rgba(251, 146, 60, 0.3); }
+.badge--unknown { color: #8892A0; background: rgba(136, 146, 160, 0.1); border: 1px solid rgba(136, 146, 160, 0.3); }

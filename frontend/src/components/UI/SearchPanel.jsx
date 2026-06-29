@@ -1,18 +1,23 @@
 /**
  * SearchPanel — Left-side search UI inside the observatory.
- * Debounced search input + popular objects quick-access list.
+ * Search runs only when the user presses Enter or the search button. Editing the
+ * query cancels any in-flight request and clears stale results.
  * Anime.js slide-in animation on mount.
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
 import { useSearchMutation, usePopularObjects } from '../../hooks/useNASAData'
+import { useTranslation } from '../../i18n'
 
 const TYPE_ICONS = {
   planet: '🪐',
   exoplanet: '🌍',
+  moon: '🌙',
   asteroid: '☄️',
+  comet: '☄️',
   star: '⭐',
+  blackhole: '🕳️',
   nebula: '🌌',
   galaxy: '🌠',
 }
@@ -44,8 +49,10 @@ function ObjectCard({ obj, onClick }) {
 
 export default function SearchPanel() {
   const panelRef = useRef()
+  const abortRef = useRef(null)
   const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [hasSearched, setHasSearched] = useState(false)
+  const { t } = useTranslation()
 
   const targetObject = useObservatoryStore((s) => s.targetObject)
   const searchResults = useObservatoryStore((s) => s.searchResults)
@@ -65,28 +72,38 @@ export default function SearchPanel() {
     })
   }, [])
 
-  // Debounce search input
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 400)
-    return () => clearTimeout(timer)
-  }, [query])
+  // Abort any in-flight request on unmount.
+  useEffect(() => () => { if (abortRef.current) abortRef.current.abort() }, [])
 
-  // Execute search when debounced query changes
-  useEffect(() => {
-    if (!debouncedQuery.trim()) {
-      setSearchResults([])
-      return
-    }
-    searchMutation.mutate(debouncedQuery, {
-      onSuccess: (data) => setSearchResults(data.results ?? []),
-    })
-  }, [debouncedQuery])
+  // Run the search — only called on explicit submit (Enter / button click).
+  const runSearch = useCallback(() => {
+    const q = query.trim()
+    if (!q) { setSearchResults([]); setHasSearched(false); return }
+    if (abortRef.current) abortRef.current.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+    setHasSearched(true)
+    searchMutation.mutate(
+      { query: q, signal: controller.signal },
+      { onSuccess: (data) => setSearchResults(data.results ?? []) }
+    )
+  }, [query, searchMutation, setSearchResults])
+
+  // Editing the query cancels any running search and clears stale results.
+  const handleChange = useCallback((e) => {
+    setQuery(e.target.value)
+    if (abortRef.current) { abortRef.current.abort(); abortRef.current = null }
+    searchMutation.reset()
+    setSearchResults([])
+    setHasSearched(false)
+  }, [searchMutation, setSearchResults])
 
   const handleSelect = useCallback((obj) => {
     targetObject(obj)
   }, [targetObject])
 
-  const displayItems = query.trim() ? searchResults : (popular ?? [])
+  const showingResults = hasSearched && !!query.trim()
+  const displayItems = showingResults ? searchResults : (popular ?? [])
 
   return (
     <div
@@ -108,20 +125,41 @@ export default function SearchPanel() {
     >
       {/* Header */}
       <div style={{ marginBottom: 16 }}>
-        <p className="text-label" style={{ marginBottom: 6 }}>SEARCH OBJECT</p>
-        <div style={{ position: 'relative' }}>
+        <p className="text-label" style={{ marginBottom: 6 }}>{t('search.title')}</p>
+        <form
+          onSubmit={(e) => { e.preventDefault(); runSearch() }}
+          style={{ position: 'relative', display: 'flex' }}
+        >
           <input
             id="search-input"
             className="input-field"
-            placeholder="Andromeda, Kepler-452b, Vega..."
+            placeholder={t('search.placeholder')}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={handleChange}
             autoComplete="off"
+            style={{ paddingRight: 38 }}
           />
-          {searchMutation.isPending && (
-            <div className="spinner" style={{ position: 'absolute', right: 10, top: 'calc(50% - 12px)' }} />
-          )}
-        </div>
+          <button
+            type="submit"
+            aria-label={t('search.action')}
+            title={t('search.actionHint')}
+            style={{
+              position: 'absolute', right: 4, top: 4, bottom: 4, width: 30,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'var(--color-blue)', padding: 0,
+            }}
+          >
+            {searchMutation.isPending ? (
+              <span className="spinner" style={{ width: 16, height: 16 }} />
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.5" y2="16.5" />
+              </svg>
+            )}
+          </button>
+        </form>
       </div>
 
       {/* Divider */}
@@ -129,21 +167,26 @@ export default function SearchPanel() {
 
       {/* Results / Popular objects */}
       <p className="text-label" style={{ marginBottom: 8 }}>
-        {query.trim() ? `RESULTS (${displayItems.length})` : 'POPULAR OBJECTS'}
+        {showingResults ? t('search.results', { count: displayItems.length }) : t('search.popular')}
       </p>
 
       {/* Error */}
       {searchMutation.isError && (
         <p style={{ fontSize: '0.75rem', color: 'var(--color-amber)', marginBottom: 8 }}>
-          Search failed. Check your connection.
+          {t('search.failed')}
         </p>
       )}
 
       {/* Object list */}
       <div style={{ overflowY: 'auto', flex: 1 }}>
-        {displayItems.length === 0 && !searchMutation.isPending && query.trim() && (
+        {!showingResults && query.trim() && !searchMutation.isPending && (
           <p style={{ color: 'var(--color-dim)', fontSize: '0.8125rem', padding: '8px 0' }}>
-            No results found.
+            {t('search.pressEnter')}
+          </p>
+        )}
+        {showingResults && displayItems.length === 0 && !searchMutation.isPending && (
+          <p style={{ color: 'var(--color-dim)', fontSize: '0.8125rem', padding: '8px 0' }}>
+            {t('search.noResults')}
           </p>
         )}
         {displayItems.map((obj) => (

@@ -75,7 +75,9 @@ class StarResponse(CelestialObject):
 class SearchResponse(BaseModel):
     """Generic search response that wraps the typed object."""
     query: str
-    results: List[CelestialObject]
+    # SerializeAsAny preserves subclass fields (star/exoplanet/asteroid) — without
+    # it the rich physical data the frontend classifier needs is stripped.
+    results: List[SerializeAsAny[CelestialObject]]
     total: int
 
 

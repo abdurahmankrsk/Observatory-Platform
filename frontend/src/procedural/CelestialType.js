@@ -78,6 +78,7 @@ export const PlanetClass = Object.freeze({
 export const Generator = Object.freeze({
   Planet: 'planet',
   Star: 'star',
+  BinaryStar: 'binaryStar',
   NeutronStar: 'neutronStar',
   BlackHole: 'blackHole',
   Nebula: 'nebula',
@@ -179,7 +180,7 @@ const GENERATOR_BY_TYPE = {
   [CelestialType.WhiteDwarf]: Generator.Star,
   [CelestialType.BrownDwarf]: Generator.Star,
   [CelestialType.Protostar]: Generator.Star,
-  [CelestialType.BinaryStar]: Generator.Star,
+  [CelestialType.BinaryStar]: Generator.BinaryStar,
 
   [CelestialType.NeutronStar]: Generator.NeutronStar,
   [CelestialType.Pulsar]: Generator.NeutronStar,

@@ -5,6 +5,7 @@ Unified search across SIMBAD, NASA Exoplanet Archive, and NeoWs.
 import math
 
 from fastapi import APIRouter, HTTPException, Query, Depends
+from pydantic import SerializeAsAny
 
 from models.schemas import CelestialObject, SearchResponse, IdentifyResponse
 from services.simbad_service import (
@@ -13,6 +14,8 @@ from services.simbad_service import (
     get_popular_objects,
     KNOWN_OBJECTS,
     SOLAR_SYSTEM,
+    MOONS,
+    ASTEROIDS,
 )
 from services.nasa_service import (
     fetch_exoplanet_by_name,
@@ -72,7 +75,7 @@ async def search(
     return SearchResponse(query=query, results=results, total=len(results))
 
 
-@router.get("/popular", response_model=list[CelestialObject])
+@router.get("/popular", response_model=list[SerializeAsAny[CelestialObject]])
 async def popular_objects():
     """
     Return the curated list of popular objects for quick access in the observatory panel.
@@ -133,13 +136,10 @@ async def get_object(
     """
     Retrieve details for a specific object by its ID.
     """
-    # Check known objects
-    if object_id in KNOWN_OBJECTS:
-        return KNOWN_OBJECTS[object_id]
-
-    # Check solar system
-    if object_id in SOLAR_SYSTEM:
-        return SOLAR_SYSTEM[object_id]
+    # Check the curated catalogs (by dict key, which matches the object id)
+    for catalog in (KNOWN_OBJECTS, SOLAR_SYSTEM, MOONS, ASTEROIDS):
+        if object_id in catalog:
+            return catalog[object_id]
 
     # Try exoplanet lookup
     try:

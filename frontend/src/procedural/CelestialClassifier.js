@@ -163,6 +163,19 @@ export function classifyPlanetClass(object) {
   // Density relative to Earth (= m / r³ when both known). >1 ⇒ rockier than Earth.
   const density = m != null && r != null && r > 0 ? m / (r * r * r) : null
 
+  // When we lack physical numbers (true for solar-system bodies), the description
+  // text is the best signal — e.g. "a banded gas giant", "an ice giant", "the
+  // Red Planet". This runs first so curated bodies get the right class.
+  if (r == null && teq == null) {
+    const t = [object?.name, object?.description, object?.fun_fact].filter(Boolean).join(' ').toLowerCase()
+    if (/\bgas giant\b/.test(t)) return PlanetClass.GasGiant
+    if (/\bice giant\b/.test(t)) return PlanetClass.IceGiant
+    if (/\blava\b|\bmolten\b|\bvolcanic\b/.test(t)) return PlanetClass.LavaWorld
+    if (/\bocean world\b|\bwater world\b|\bocean\b/.test(t)) return PlanetClass.OceanWorld
+    if (/\bred planet\b|\bdesert\b|\barid\b/.test(t)) return PlanetClass.DesertWorld
+    if (/\bice\b|\bicy\b|\bfrozen\b|\bnitrogen ice\b/.test(t)) return PlanetClass.IceWorld
+  }
+
   // Extremely hot worlds glow regardless of size.
   if (teq != null && teq > 1500) return PlanetClass.LavaWorld
 
@@ -300,14 +313,24 @@ export function classify(object) {
       return { type: T.SpiralGalaxy, planetClass: null, source: 'fallback', reasons: ['coarse=galaxy'] }
     }
 
+    case 'blackhole':
+    case 'black_hole':
+      return { type: T.BlackHole, planetClass: null, source: 'fields', reasons: ['coarse=blackhole'] }
+
     case 'exoplanet':
       return { type: T.Exoplanet, planetClass: classifyPlanetClass(object), source: 'fields', reasons: ['coarse=exoplanet'] }
 
     case 'planet':
       return { type: T.Planet, planetClass: classifyPlanetClass(object), source: 'fields', reasons: ['coarse=planet'] }
 
+    case 'moon':
+      return { type: T.Moon, planetClass: classifyPlanetClass(object), source: 'fields', reasons: ['coarse=moon'] }
+
     case 'asteroid':
       return { type: T.Asteroid, planetClass: null, source: 'fields', reasons: ['coarse=asteroid'] }
+
+    case 'comet':
+      return { type: T.Comet, planetClass: null, source: 'fields', reasons: ['coarse=comet'] }
 
     default:
       break

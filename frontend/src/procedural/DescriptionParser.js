@@ -43,6 +43,12 @@ export const KEYWORD_RULES = [
   [/\belliptical\s+galaxy\b|\blenticular\s+galaxy\b/, T.EllipticalGalaxy],
   [/\birregular\s+galaxy\b|\bdwarf\s+irregular\b/, T.IrregularGalaxy],
 
+  // — Multiplicity describes the whole system, so it beats a component's type
+  //   (e.g. "a binary system … white dwarf Sirius B" → BinaryStar, not WhiteDwarf).
+  //   Compact/explosive endpoints above still win (an X-ray binary black hole
+  //   stays a black hole). —
+  [/\bbinary\s+star\b|\bdouble\s+star\b|\bbinary\s+system\b|\bspectroscopic\s+binary\b|\beclipsing\s+binary\b|\btriple\s+star\b|\bmultiple\s+star\s+system\b/, T.BinaryStar],
+
   // — Stellar life-cycle stages (specific before generic) —
   [/\bred\s+supergiant\b/, T.RedSupergiant],
   [/\bblue\s+supergiant\b|\bblue\s+giant\b/, T.BlueGiant],
@@ -50,7 +56,6 @@ export const KEYWORD_RULES = [
   [/\bwhite\s+dwarf\b/, T.WhiteDwarf],
   [/\bbrown\s+dwarf\b|\bsub[-\s]?stellar\b/, T.BrownDwarf],
   [/\bprotostar\b|\byoung\s+stellar\s+object\b|\bt\s+tauri\b/, T.Protostar],
-  [/\bbinary\s+star\b|\bdouble\s+star\b|\bbinary\s+system\b|\bspectroscopic\s+binary\b|\beclipsing\s+binary\b/, T.BinaryStar],
 
   // — Solar-system / sub-stellar bodies —
   [/\bexoplanet\b|\bextrasolar\s+planet\b/, T.Exoplanet],
