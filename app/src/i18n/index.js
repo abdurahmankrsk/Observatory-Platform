@@ -229,7 +229,7 @@ const typeLabels = {
     Nebula: 'Nebula', PlanetaryNebula: 'Planetary Nebula', EmissionNebula: 'Emission Nebula',
     ReflectionNebula: 'Reflection Nebula', DarkNebula: 'Dark Nebula',
     GlobularCluster: 'Globular Cluster', OpenCluster: 'Open Cluster',
-    SupernovaRemnant: 'Supernova Remnant', Quasar: 'Quasar', BinaryStar: 'Binary Star',
+    SupernovaRemnant: 'Supernova Remnant', Quasar: 'Quasar', BinaryStar: 'Binary Star', TrinaryStar: 'Trinary Star',
     Unknown: 'Unknown',
   },
   bs: {
@@ -248,7 +248,7 @@ const typeLabels = {
     Nebula: 'Maglica', PlanetaryNebula: 'Planetarna maglica', EmissionNebula: 'Emisiona maglica',
     ReflectionNebula: 'Refleksiona maglica', DarkNebula: 'Tamna maglica',
     GlobularCluster: 'Globularno jato', OpenCluster: 'Otvoreno jato',
-    SupernovaRemnant: 'Ostatak supernove', Quasar: 'Kvazar', BinaryStar: 'Dvojna zvijezda',
+    SupernovaRemnant: 'Ostatak supernove', Quasar: 'Kvazar', BinaryStar: 'Dvojna zvijezda', TrinaryStar: 'Trojna zvijezda',
     Unknown: 'Nepoznato',
   },
 }

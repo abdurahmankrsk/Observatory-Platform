@@ -49,7 +49,8 @@ export const KEYWORD_RULES = [
   //   (e.g. "a binary system … white dwarf Sirius B" → BinaryStar, not WhiteDwarf).
   //   Compact/explosive endpoints above still win (an X-ray binary black hole
   //   stays a black hole). —
-  [/\bbinary\s+star\b|\bdouble\s+star\b|\bbinary\s+system\b|\bspectroscopic\s+binary\b|\beclipsing\s+binary\b|\btriple\s+star\b|\bmultiple\s+star\s+system\b/, T.BinaryStar],
+  [/\btrinary\s+star\b|\btriple\s+star\b|\btriple\s+star\s+system\b|\btrinary\s+system\b/, T.TrinaryStar],
+  [/\bbinary\s+star\b|\bdouble\s+star\b|\bbinary\s+system\b|\bspectroscopic\s+binary\b|\beclipsing\s+binary\b|\bmultiple\s+star\s+system\b/, T.BinaryStar],
 
   // — Stellar life-cycle stages (specific before generic) —
   [/\bred\s+supergiant\b/, T.RedSupergiant],

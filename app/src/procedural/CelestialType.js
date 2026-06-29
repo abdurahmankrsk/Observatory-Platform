@@ -50,6 +50,7 @@ export const CelestialType = Object.freeze({
   SupernovaRemnant: 'SupernovaRemnant',
   Quasar: 'Quasar',
   BinaryStar: 'BinaryStar',
+  TrinaryStar: 'TrinaryStar',
 
   Unknown: 'Unknown',
 })
@@ -104,6 +105,7 @@ const STAR_TYPES = new Set([
   CelestialType.BrownDwarf,
   CelestialType.Protostar,
   CelestialType.BinaryStar,
+  CelestialType.TrinaryStar,
 ])
 
 const COMPACT_STAR_TYPES = new Set([
@@ -162,6 +164,7 @@ export function isStarRelatedSpecific(t) {
     t === CelestialType.BrownDwarf ||
     t === CelestialType.Protostar ||
     t === CelestialType.BinaryStar ||
+    t === CelestialType.TrinaryStar ||
     t === CelestialType.SupernovaRemnant
   )
 }
@@ -183,6 +186,7 @@ const GENERATOR_BY_TYPE = {
   [CelestialType.BrownDwarf]: Generator.Star,
   [CelestialType.Protostar]: Generator.Star,
   [CelestialType.BinaryStar]: Generator.BinaryStar,
+  [CelestialType.TrinaryStar]: Generator.BinaryStar,
 
   [CelestialType.NeutronStar]: Generator.NeutronStar,
   [CelestialType.Pulsar]: Generator.NeutronStar,
