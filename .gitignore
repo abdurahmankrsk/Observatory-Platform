@@ -43,3 +43,11 @@ htmlcov/
 *.njsproj
 *.sln
 *.sw?
+
+# Retired directories (kept locally for reference, not tracked)
+backend/
+frontend/
+
+# Next.js secrets
+app/.env.local
+app/.env*.local
