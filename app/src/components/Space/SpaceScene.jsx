@@ -40,7 +40,7 @@ function WarpLines({ active }) {
       // Random starting position in a sphere
       const theta = Math.random() * Math.PI * 2
       const phi = Math.acos(2 * Math.random() - 1)
-      const r = 2 + Math.random() * 80
+      const r = 2 + Math.random() * 400
 
       const x = r * Math.sin(phi) * Math.cos(theta)
       const y = r * Math.sin(phi) * Math.sin(theta)
@@ -150,7 +150,7 @@ export default function SpaceScene() {
         dpr={Math.min(window.devicePixelRatio, 2)}
       >
         {/* Background stars */}
-        <Stars radius={200} depth={60} count={8000} factor={4} saturation={0.1} fade />
+        <Stars radius={400} depth={100} count={12000} factor={4} saturation={0.1} fade />
 
         {/* Ambient light for seeing non-emissive geometry */}
         <ambientLight intensity={0.05} />

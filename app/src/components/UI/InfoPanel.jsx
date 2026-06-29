@@ -99,6 +99,7 @@ function AsteroidInfo({ data, approach, t }) {
 
 export default function InfoPanel() {
   const panelRef = useRef()
+  const [isMinimized, setIsMinimized] = useState(false)
   const { t, tType, lang } = useTranslation()
   const isMobile = useIsMobile()
   const selectedObject = useObservatoryStore((s) => s.selectedObject)
@@ -147,24 +148,32 @@ export default function InfoPanel() {
       style={{
         position: 'fixed',
         right: isMobile ? 8 : 24,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        width: isMobile ? 168 : 320,
-        maxHeight: isMobile ? '70vh' : '80vh',
+        top: isMobile ? 'auto' : '50%',
+        bottom: isMobile ? 8 : undefined,
+        transform: isMobile ? 'none' : 'translateY(-50%)',
+        width: isMobile ? 180 : 320,
+        maxHeight: isMobile ? (isMinimized ? 'auto' : '40vh') : (isMinimized ? 'auto' : '80vh'),
         display: 'flex',
         flexDirection: 'column',
         padding: isMobile ? 14 : 24,
         zIndex: 20,
         opacity: 0,
-        overflowY: 'auto',
+        overflowY: isMinimized ? 'hidden' : 'auto',
       }}
     >
-      {/* Object type badge */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: isMinimized ? 0 : 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span className={badgeClass}>{badgeText}</span>
+        <button 
+          onClick={() => setIsMinimized(!isMinimized)} 
+          style={{ background: 'none', border: 'none', color: 'var(--color-dim)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 0 }}
+        >
+          {isMinimized ? '+' : '−'}
+        </button>
       </div>
 
-      {/* Object name */}
+      {!isMinimized && (
+        <>
+          {/* Object name */}
       <h2 className="text-display" style={{
         fontSize: '1.25rem',
         fontWeight: 600,
@@ -265,6 +274,8 @@ export default function InfoPanel() {
           {t('info.back')}
         </button>
       </div>
+        </>
+      )}
 
       {/* Corner decorations */}
       <div className="corner-tl" />

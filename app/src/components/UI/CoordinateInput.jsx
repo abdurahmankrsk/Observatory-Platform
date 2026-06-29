@@ -17,6 +17,7 @@ export default function CoordinateInput() {
   const [dec, setDec] = useState('')
   const [error, setError] = useState('')
   const [note, setNote] = useState('')
+  const [isMinimized, setIsMinimized] = useState(false)
   const { t } = useTranslation()
   const isMobile = useIsMobile()
 
@@ -90,16 +91,28 @@ export default function CoordinateInput() {
       style={{
         position: 'fixed',
         right: isMobile ? 8 : 24,
-        bottom: isMobile ? 64 : 80,
-        width: isMobile ? 150 : 260,
+        bottom: isMobile ? 8 : 80,
+        width: isMobile ? 160 : 260,
+        maxHeight: isMobile ? (isMinimized ? 'auto' : '30vh') : 'auto',
+        overflowY: isMobile ? (isMinimized ? 'hidden' : 'auto') : 'visible',
         padding: isMobile ? 12 : 20,
         zIndex: 20,
         opacity: 0,
       }}
     >
-      <p className="text-label" style={{ marginBottom: 16 }}>{t('coord.title')}</p>
+      <div style={{ marginBottom: isMinimized ? 0 : 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <p className="text-label" style={{ marginBottom: 0 }}>{t('coord.title')}</p>
+        <button 
+          onClick={() => setIsMinimized(!isMinimized)} 
+          style={{ background: 'none', border: 'none', color: 'var(--color-dim)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 0 }}
+        >
+          {isMinimized ? '+' : '−'}
+        </button>
+      </div>
 
-      <div style={{ marginBottom: 12 }}>
+      {!isMinimized && (
+        <>
+          <div style={{ marginBottom: 12 }}>
         <label className="text-label" style={{ display: 'block', marginBottom: 4, color: 'var(--color-dim)' }}>
           {t('coord.raLabel')}
         </label>
@@ -155,6 +168,9 @@ export default function CoordinateInput() {
         {identifyMutation.isPending && <span className="spinner" />}
         {identifyMutation.isPending ? t('coord.identifying') : t('coord.point')}
       </button>
+      
+        </>
+      )}
 
       {/* Corner decorations */}
       <div className="corner-tl" />

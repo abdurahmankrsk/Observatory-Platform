@@ -129,6 +129,7 @@ export default function StartScreen() {
             lineHeight: 1,
             marginBottom: 12,
             opacity: 0,
+            textAlign: 'center',
           }}
         >
           ASTRO <span style={{ color: 'var(--color-blue)' }}>OBSERVATORY</span>
@@ -232,7 +233,7 @@ export default function StartScreen() {
             clicks meant for the language dropdown that can overlap it. */}
         <p
           className="text-label"
-          style={{ marginTop: 48, opacity: 0.3, fontSize: '0.6rem', pointerEvents: 'none' }}
+          style={{ marginTop: 48, opacity: 0.3, fontSize: '0.6rem', pointerEvents: 'none', textAlign: 'center', width: '100%', padding: '0 16px' }}
         >
           RA 00h 00m 00s · DEC +00° 00′ 00″ · EPOCH J2000.0
         </p>
