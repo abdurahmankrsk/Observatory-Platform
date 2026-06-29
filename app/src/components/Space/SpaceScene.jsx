@@ -81,14 +81,14 @@ function WarpLines({ active }) {
       const oy = positions[i * 6 + 1]
       const oz = positions[i * 6 + 2]
 
-      // End point stretched toward camera (-Z direction)
+      // End point stretched toward camera (+Z direction, since camera is at +Z looking at -Z)
       const s = speeds[i] * stretch
       arr[i * 6 + 0] = ox
       arr[i * 6 + 1] = oy
       arr[i * 6 + 2] = oz
       arr[i * 6 + 3] = ox
       arr[i * 6 + 4] = oy
-      arr[i * 6 + 5] = oz - s
+      arr[i * 6 + 5] = oz + s
     }
 
     posAttr.needsUpdate = true

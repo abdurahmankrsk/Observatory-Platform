@@ -145,14 +145,12 @@ export function useCameraFlight() {
       // Start from current camera position
       const startPos = camera.position.clone()
 
-      // Arrival position: a three-quarter view offset from the target. The object
-      // sits at the origin, so normalising a zero vector is useless — instead fly
-      // to a fixed viewing direction at a distance scaled to the object's size
-      // (arrivalDistance), looking slightly down so disks/rings read as disks.
-      const dirToTarget = targetPosition.length() > 0.001
-        ? targetPosition.clone().normalize()
-        : new THREE.Vector3(0.3, 0.5, 1).normalize()
-      const arrivalPos = dirToTarget.multiplyScalar(targetPosition.length() + arrivalDistance)
+      // Arrival position: To preserve the illusion of the warp stars flying past us,
+      // the camera must fly straight forward (parallel to the Z-axis). We add a slight
+      // elevation (Y) so that rings and accretion disks read clearly upon arrival.
+      const arrivalPos = targetPosition.length() > 0.001
+        ? targetPosition.clone().normalize().multiplyScalar(targetPosition.length() + arrivalDistance)
+        : new THREE.Vector3(0, arrivalDistance * 0.35, arrivalDistance)
 
       const proxy = {
         x: startPos.x,
