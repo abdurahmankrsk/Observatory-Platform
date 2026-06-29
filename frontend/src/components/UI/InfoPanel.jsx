@@ -101,6 +101,9 @@ export default function InfoPanel() {
   const beginFlight = useObservatoryStore((s) => s.beginFlight)
   const returnToObservatory = useObservatoryStore((s) => s.returnToObservatory)
   const scene = useObservatoryStore((s) => s.scene)
+  const savedObjects = useObservatoryStore((s) => s.savedObjects)
+  const toggleSaved = useObservatoryStore((s) => s.toggleSaved)
+  const isSaved = !!selectedObject && savedObjects.some((o) => o.id === selectedObject.id)
   // Precise classified type (e.g. "Black Hole", "Pulsar") for the badge label.
   const appearance = useProceduralGen(selectedObject)
   // Free-text fields translated to the active language (no-op for English).
@@ -237,6 +240,19 @@ export default function InfoPanel() {
             {t('info.flyTo', { name: selectedObject.name.split(' ')[0].toUpperCase() })}
           </button>
         )}
+        <button
+          id="save-object-btn"
+          className="btn-ghost"
+          aria-pressed={isSaved}
+          style={{
+            width: '100%',
+            justifyContent: 'center',
+            color: isSaved ? 'var(--color-amber)' : undefined,
+          }}
+          onClick={() => toggleSaved(selectedObject)}
+        >
+          {isSaved ? t('info.saved') : t('info.save')}
+        </button>
         <button
           id="back-to-observatory-btn"
           className="btn-ghost"

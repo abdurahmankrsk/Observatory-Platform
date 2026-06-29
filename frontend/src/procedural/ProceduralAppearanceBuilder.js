@@ -388,7 +388,9 @@ function buildBlackHole(object, seed, features) {
     diskInnerColor: col(1.0, 0.95, 0.8),
     diskMidColor: col(1.0, 0.55, 0.2),
     diskOuterColor: col(0.7, 0.15, 0.35),
-    diskBrightness: active ? 2.6 : 1.3,
+    // Kept moderate: a very bright additive inner lip next to the pure-black
+    // horizon is the high-contrast edge bloom turns into flicker.
+    diskBrightness: active ? 2.0 : 1.1,
     diskInner: 1.6 + seed * 0.2,
     diskOuter: 4.5 + seed * 1.5,
     diskTilt: 0.45 + seed * 0.25,
@@ -414,7 +416,7 @@ function buildQuasar(object, seed) {
     diskInnerColor: col(0.85, 0.92, 1.0),
     diskMidColor: col(0.6, 0.7, 1.0),
     diskOuterColor: col(0.4, 0.3, 0.8),
-    diskBrightness: 3.2,
+    diskBrightness: 2.4,
     diskInner: 1.2 + seed * 0.2,
     diskOuter: 5.0 + seed * 1.5,
     diskTilt: 0.5 + seed * 0.2,

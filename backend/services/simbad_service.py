@@ -110,6 +110,27 @@ KNOWN_OBJECTS: Dict[str, CelestialObject] = {
         fun_fact="If Betelgeuse replaced our Sun, its surface would extend past Jupiter's orbit.",
         star=StarData(temperature_k=3500, radius_solar=887, spectral_type="M1-M2"),
     ),
+    # Our home star. type='star' + a G2V spectral type makes the frontend
+    # classifier render it as a yellow main-sequence star at its true ~5778 K
+    # colour. distance_au=1 is the Earth–Sun distance (it has no fixed RA/Dec).
+    "sun": StarResponse(
+        id="sun",
+        name="The Sun (Sol)",
+        type="star",
+        distance_au=1.0,
+        description="Our home star — a G-type main-sequence (G2V) yellow dwarf that holds 99.8% of the Solar System's mass and drives almost all of Earth's weather and life.",
+        fun_fact="The Sun is so large that about 1.3 million Earths could fit inside it, yet it is only an average-sized star.",
+        star=StarData(temperature_k=5778, radius_solar=1.0, luminosity_solar=1.0, spectral_type="G2V"),
+    ),
+    "sol": StarResponse(
+        id="sun",
+        name="The Sun (Sol)",
+        type="star",
+        distance_au=1.0,
+        description="Our home star — a G-type main-sequence (G2V) yellow dwarf that holds 99.8% of the Solar System's mass and drives almost all of Earth's weather and life.",
+        fun_fact="The Sun is so large that about 1.3 million Earths could fit inside it, yet it is only an average-sized star.",
+        star=StarData(temperature_k=5778, radius_solar=1.0, luminosity_solar=1.0, spectral_type="G2V"),
+    ),
     "sagittarius a*": StarResponse(
         id="sagittarius_a_star",
         name="Sagittarius A*",
@@ -400,9 +421,12 @@ async def search_simbad(query: str) -> Optional[CelestialObject]:
         if query_alt in catalog:
             return catalog[query_alt]
 
-    # Partial match in the deep-sky known objects (longer, constellation-style names)
+    # Partial match in the deep-sky known objects (longer, constellation-style
+    # names). The `key in query` direction is gated on a min key length so short
+    # keys ("sun", "sol", "m31") can't hijack a longer query (e.g. a search for
+    # "sunflower galaxy" must not collapse to the Sun).
     for key, obj in KNOWN_OBJECTS.items():
-        if query_lower in key or key in query_lower:
+        if query_lower in key or (len(key) >= 4 and key in query_lower):
             return obj
 
     # Check cache
@@ -468,17 +492,31 @@ async def search_simbad_many(query: str, limit: int = 12) -> List[CelestialObjec
         elif query_alt in catalog:
             add(catalog[query_alt])
     for key, obj in KNOWN_OBJECTS.items():
-        if query_lower in key or key in query_lower:
+        if query_lower in key or (len(key) >= 4 and key in query_lower):
             add(obj)
 
     cache_key = f"simbad_many:{query_lower}:{limit}"
     cached = _get_cached(cache_key)
     if cached is None:
         norm = " ".join(query.upper().split()).replace("'", "''")
+        # Exact identifier match FIRST. SIMBAD normalises case and spacing for the
+        # `=` comparison, so this reliably resolves common names like "Veil Nebula"
+        # or "Cygnus Loop" (stored as the mixed-case "NAME Veil Nebula"). The
+        # case-sensitive LIKE below never matches those, which is why a plain
+        # common-name search used to return nothing. Listed before the prefix
+        # results so the named object the user asked for is surfaced first.
+        exact = await _query_simbad_many(
+            f"""
+            SELECT TOP 1 main_id, otype, ra, dec, plx_value, sp_type, nbref
+            FROM basic JOIN ident ON ident.oidref = basic.oid
+            WHERE ident.id = '{norm}'
+            """,
+            fallback_name=query,
+        )
         # Over-fetch: one object can match through several identifiers (e.g. a
         # pulsar has both a PSR B… and PSR J… name), so fetch extra rows and
         # de-duplicate by object id down to `limit`.
-        cached = await _query_simbad_many(
+        prefix = await _query_simbad_many(
             f"""
             SELECT TOP {limit * 4} main_id, otype, ra, dec, plx_value, sp_type, nbref
             FROM basic JOIN ident ON ident.oidref = basic.oid
@@ -487,8 +525,9 @@ async def search_simbad_many(query: str, limit: int = 12) -> List[CelestialObjec
             """,
             fallback_name=query,
         )
+        cached = exact + prefix
         if not cached:
-            # Prefix found nothing — fall back to a contains match.
+            # Neither exact nor prefix matched — fall back to a contains match.
             cached = await _query_simbad_many(
                 f"""
                 SELECT TOP {limit * 4} main_id, otype, ra, dec, plx_value, sp_type, nbref
@@ -747,6 +786,7 @@ def _build_simbad_response(
 def get_popular_objects() -> List[CelestialObject]:
     """Return the curated list of popular objects for the observatory panel."""
     popular_keys = [
+        "sun",
         "andromeda",
         "orion nebula",
         "vega",

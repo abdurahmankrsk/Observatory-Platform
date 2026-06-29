@@ -35,6 +35,9 @@ const en = {
   'search.noResults': 'No results found.',
   'search.action': 'Search',
   'search.actionHint': 'Search (Enter)',
+  'search.saved': 'SAVED OBJECTS',
+  'search.save': 'Save object',
+  'search.unsave': 'Remove from saved',
 
   // CoordinateInput
   'coord.title': 'COORDINATE INPUT',
@@ -76,6 +79,8 @@ const en = {
   'info.didYouKnow': 'DID YOU KNOW',
   'info.flyTo': 'FLY TO {name}',
   'info.back': 'BACK TO OBSERVATORY',
+  'info.save': '☆ SAVE OBJECT',
+  'info.saved': '★ SAVED',
 
   // OcularView
   'ocular.seeing': 'ATMOSPHERIC SEEING: GOOD',
@@ -122,6 +127,9 @@ const bs = {
   'search.noResults': 'Nema pronađenih rezultata.',
   'search.action': 'Pretraga',
   'search.actionHint': 'Pretraga (Enter)',
+  'search.saved': 'SAČUVANI OBJEKTI',
+  'search.save': 'Sačuvaj objekt',
+  'search.unsave': 'Ukloni iz sačuvanih',
 
   // CoordinateInput
   'coord.title': 'UNOS KOORDINATA',
@@ -163,6 +171,8 @@ const bs = {
   'info.didYouKnow': 'DA LI STE ZNALI',
   'info.flyTo': 'LETI DO {name}',
   'info.back': 'NAZAD U OPSERVATORIJ',
+  'info.save': '☆ SAČUVAJ OBJEKT',
+  'info.saved': '★ SAČUVANO',
 
   // OcularView
   'ocular.seeing': 'ATMOSFERSKO VIĐENJE: DOBRO',

@@ -22,28 +22,51 @@ const TYPE_ICONS = {
   galaxy: '🌠',
 }
 
-function ObjectCard({ obj, onClick, tType }) {
+function ObjectCard({ obj, onClick, tType, saved, onToggleSave, saveLabel, unsaveLabel }) {
   const badgeClass = `badge badge--${obj.type}`
   return (
-    <button
-      className="btn-ghost"
-      style={{
-        width: '100%',
-        justifyContent: 'flex-start',
-        padding: '10px 12px',
-        gap: 10,
-        textAlign: 'left',
-        marginBottom: 4,
-        borderRadius: 1,
-      }}
-      onClick={() => onClick(obj)}
-    >
-      <span style={{ fontSize: 16 }}>{TYPE_ICONS[obj.type] ?? '✦'}</span>
-      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8125rem', color: 'var(--color-star)' }}>
-        {obj.name}
-      </span>
-      <span className={badgeClass}>{tType(obj.type)}</span>
-    </button>
+    <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, marginBottom: 4 }}>
+      <button
+        className="btn-ghost"
+        style={{
+          flex: 1,
+          minWidth: 0,
+          justifyContent: 'flex-start',
+          padding: '10px 12px',
+          gap: 10,
+          textAlign: 'left',
+          borderRadius: 1,
+        }}
+        onClick={() => onClick(obj)}
+      >
+        <span style={{ fontSize: 16 }}>{TYPE_ICONS[obj.type] ?? '✦'}</span>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8125rem', color: 'var(--color-star)' }}>
+          {obj.name}
+        </span>
+        <span className={badgeClass}>{tType(obj.type)}</span>
+      </button>
+      <button
+        className="btn-ghost"
+        aria-label={saved ? unsaveLabel : saveLabel}
+        title={saved ? unsaveLabel : saveLabel}
+        aria-pressed={saved}
+        onClick={(e) => { e.stopPropagation(); onToggleSave(obj) }}
+        style={{
+          flex: '0 0 auto',
+          width: 32,
+          padding: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 15,
+          lineHeight: 1,
+          borderRadius: 1,
+          color: saved ? 'var(--color-amber)' : 'var(--color-dim)',
+        }}
+      >
+        {saved ? '★' : '☆'}
+      </button>
+    </div>
   )
 }
 
@@ -57,6 +80,9 @@ export default function SearchPanel() {
   const targetObject = useObservatoryStore((s) => s.targetObject)
   const searchResults = useObservatoryStore((s) => s.searchResults)
   const setSearchResults = useObservatoryStore((s) => s.setSearchResults)
+  const savedObjects = useObservatoryStore((s) => s.savedObjects)
+  const toggleSaved = useObservatoryStore((s) => s.toggleSaved)
+  const savedIds = new Set(savedObjects.map((o) => o.id))
 
   const { data: popular } = usePopularObjects()
   const searchMutation = useSearchMutation()
@@ -103,7 +129,19 @@ export default function SearchPanel() {
   }, [targetObject])
 
   const showingResults = hasSearched && !!query.trim()
-  const displayItems = showingResults ? searchResults : (popular ?? [])
+
+  const renderCard = (obj) => (
+    <ObjectCard
+      key={obj.id}
+      obj={obj}
+      onClick={handleSelect}
+      tType={tType}
+      saved={savedIds.has(obj.id)}
+      onToggleSave={toggleSaved}
+      saveLabel={t('search.save')}
+      unsaveLabel={t('search.unsave')}
+    />
+  )
 
   return (
     <div
@@ -165,11 +203,6 @@ export default function SearchPanel() {
       {/* Divider */}
       <div className="divider" style={{ marginBottom: 12 }} />
 
-      {/* Results / Popular objects */}
-      <p className="text-label" style={{ marginBottom: 8 }}>
-        {showingResults ? t('search.results', { count: displayItems.length }) : t('search.popular')}
-      </p>
-
       {/* Error */}
       {searchMutation.isError && (
         <p style={{ fontSize: '0.75rem', color: 'var(--color-amber)', marginBottom: 8 }}>
@@ -177,21 +210,37 @@ export default function SearchPanel() {
         </p>
       )}
 
-      {/* Object list */}
+      {/* Object list — search results, or saved + popular when not searching */}
       <div style={{ overflowY: 'auto', flex: 1 }}>
-        {!showingResults && query.trim() && !searchMutation.isPending && (
+        {showingResults ? (
+          <>
+            <p className="text-label" style={{ marginBottom: 8 }}>
+              {t('search.results', { count: searchResults.length })}
+            </p>
+            {searchResults.length === 0 && !searchMutation.isPending && (
+              <p style={{ color: 'var(--color-dim)', fontSize: '0.8125rem', padding: '8px 0' }}>
+                {t('search.noResults')}
+              </p>
+            )}
+            {searchResults.map(renderCard)}
+          </>
+        ) : query.trim() && !searchMutation.isPending ? (
           <p style={{ color: 'var(--color-dim)', fontSize: '0.8125rem', padding: '8px 0' }}>
             {t('search.pressEnter')}
           </p>
+        ) : (
+          <>
+            {savedObjects.length > 0 && (
+              <>
+                <p className="text-label" style={{ marginBottom: 8 }}>{t('search.saved')}</p>
+                {savedObjects.map(renderCard)}
+                <div className="divider" style={{ margin: '12px 0' }} />
+              </>
+            )}
+            <p className="text-label" style={{ marginBottom: 8 }}>{t('search.popular')}</p>
+            {(popular ?? []).map(renderCard)}
+          </>
         )}
-        {showingResults && displayItems.length === 0 && !searchMutation.isPending && (
-          <p style={{ color: 'var(--color-dim)', fontSize: '0.8125rem', padding: '8px 0' }}>
-            {t('search.noResults')}
-          </p>
-        )}
-        {displayItems.map((obj) => (
-          <ObjectCard key={obj.id} obj={obj} onClick={handleSelect} tType={tType} />
-        ))}
       </div>
 
       {/* Corner decorations */}

@@ -169,13 +169,20 @@ export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
         <meshBasicMaterial color="#000000" />
       </mesh>
 
-      {/* Photon-ring / lensing rim — bright Fresnel shell hugging the horizon */}
-      <mesh>
+      {/* Photon-ring / lensing rim — bright Fresnel shell hugging the horizon.
+          depthTest is OFF: otherwise the shell's back faces are depth-tested
+          against the opaque black horizon sphere right at its silhouette, and
+          that per-pixel knife-edge aliases as the camera orbits — which the bloom
+          pass amplifies into the "white flashing" on the event horizon. With the
+          test off the whole rim renders stably (Fresnel keeps the centre dark, so
+          the horizon stays black). Gain is kept modest so bloom can't blow it out. */}
+      <mesh renderOrder={3}>
         <sphereGeometry args={[r * 1.12, 48, 48]} />
         <shaderMaterial
           transparent
           side={THREE.BackSide}
           depthWrite={false}
+          depthTest={false}
           blending={THREE.AdditiveBlending}
           uniforms={{ uColor: { value: params?.diskInnerColor ?? new THREE.Color(1, 0.9, 0.7) } }}
           vertexShader={`
@@ -191,7 +198,7 @@ export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
             void main(){
               // Soft, stable photon-ring rim (lower gain avoids bloom flicker).
               float f = pow(1.0 - abs(dot(vN, vV)), 3.0);
-              gl_FragColor = vec4(uColor * f * 1.4, f * 0.8);
+              gl_FragColor = vec4(uColor * f * 0.95, f * 0.55);
             }`}
         />
       </mesh>

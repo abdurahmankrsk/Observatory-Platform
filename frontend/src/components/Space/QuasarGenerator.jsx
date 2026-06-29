@@ -38,8 +38,13 @@ export default function QuasarGenerator({ params, position = [0, 0, 0] }) {
     const t = s.clock.elapsedTime
     if (hostRef.current) hostRef.current.rotation.y = t * 0.02
     if (nucleusRef.current) {
-      const p = 1 + 0.15 * Math.sin(t * 2.0)
-      nucleusRef.current.scale.setScalar(p)
+      // Gentle "breathing" flicker. Earlier this scaled an already-saturated
+      // additive sphere, so each peak blew the whole core to flat white (the
+      // "periodically turns white" bug). Now we pulse opacity within a low range
+      // and only nudge the scale, so it shimmers instead of saturating.
+      const pulse = 0.5 + 0.5 * Math.sin(t * 1.5)
+      nucleusRef.current.scale.setScalar(1 + 0.05 * pulse)
+      nucleusRef.current.material.opacity = 0.22 + 0.12 * pulse
     }
   })
 
@@ -69,7 +74,7 @@ export default function QuasarGenerator({ params, position = [0, 0, 0] }) {
         <meshBasicMaterial
           color={params?.diskInnerColor ?? new THREE.Color(0.85, 0.92, 1.0)}
           transparent
-          opacity={0.5}
+          opacity={0.28}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />

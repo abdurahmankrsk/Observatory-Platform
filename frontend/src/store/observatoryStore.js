@@ -4,6 +4,23 @@
  */
 import { create } from 'zustand'
 
+// Saved/favourited objects persist across sessions in localStorage. We store the
+// full CelestialObject payload so a saved object can be re-targeted and flown to
+// without another backend lookup.
+const SAVED_KEY = 'savedObjects'
+function loadSavedObjects() {
+  try {
+    const raw = localStorage.getItem(SAVED_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+function persistSavedObjects(objects) {
+  try { localStorage.setItem(SAVED_KEY, JSON.stringify(objects)) } catch { /* ignore */ }
+}
+
 const useObservatoryStore = create((set, get) => ({
   // ── Scene state machine ─────────────────────────────────────────────────
   scene: 'start',
@@ -23,6 +40,10 @@ const useObservatoryStore = create((set, get) => ({
   searchResults: [],
   popularObjects: [],
   isSearching: false,
+
+  // ── Saved objects (favourites) ───────────────────────────────────────────
+  // Persisted to localStorage; full object payloads so they stay flyable.
+  savedObjects: loadSavedObjects(),
 
   // ── UI state ─────────────────────────────────────────────────────────────
   isInfoPanelOpen: false,
@@ -77,6 +98,23 @@ const useObservatoryStore = create((set, get) => ({
   setSearchResults: (results) => set({ searchResults: results }),
   setPopularObjects: (objects) => set({ popularObjects: objects }),
   setSearching: (isSearching) => set({ isSearching }),
+
+  // ── Saved-object actions ─────────────────────────────────────────────────
+  isSaved: (id) => get().savedObjects.some((o) => o.id === id),
+  toggleSaved: (object) => {
+    if (!object?.id) return
+    const existing = get().savedObjects
+    const next = existing.some((o) => o.id === object.id)
+      ? existing.filter((o) => o.id !== object.id)
+      : [...existing, object]
+    persistSavedObjects(next)
+    set({ savedObjects: next })
+  },
+  removeSaved: (id) => {
+    const next = get().savedObjects.filter((o) => o.id !== id)
+    persistSavedObjects(next)
+    set({ savedObjects: next })
+  },
 
   setLoading: (isLoading, message = '') => set({ isLoading, loadingMessage: message }),
   setError: (error) => set({ error }),
