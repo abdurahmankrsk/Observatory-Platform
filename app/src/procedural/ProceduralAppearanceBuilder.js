@@ -437,6 +437,31 @@ function buildQuasar(object, seed) {
 // ── SUPERNOVA REMNANT ───────────────────────────────────────────────────────
 function buildSupernovaRemnant(object, seed, features) {
   const text = [object?.name, object?.description, object?.fun_fact].filter(Boolean).join(' ').toLowerCase()
+  
+  if (object?.id === 'veil_nebula') {
+    return {
+      generator: Generator.SupernovaRemnant,
+      type: T.SupernovaRemnant,
+      color: '#7fd4c0',
+      radius: 7.5,
+      shellThickness: 0.3,
+      particleCount: 120000,
+      filaments: true,
+      expansionSpeed: 0.02,
+      oxygenColor: col(0.0, 0.95, 1.0),   // vivid cyan
+      hydrogenColor: col(1.0, 0.1, 0.5),  // vivid pink/magenta
+      sulfurColor: col(0.9, 0.2, 0.7),    // deep pink
+      centralPulsar: false,
+      glowIntensity: 2.0,
+      particleEffects: true,
+      jets: false,
+      accretionDisk: false,
+      atmosphere: false,
+      // Shape constraints to form a long wispy tunnel/ribbon
+      isTunnel: true,
+    }
+  }
+
   return {
     generator: Generator.SupernovaRemnant,
     type: T.SupernovaRemnant,
