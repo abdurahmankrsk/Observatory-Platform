@@ -143,6 +143,7 @@ export default function InfoPanel() {
   const badgeText = tType(appearance?.celestialType || objType)
 
   return (
+    <>
     <div
       ref={panelRef}
       className="panel"
@@ -240,65 +241,42 @@ export default function InfoPanel() {
         </div>
       )}
 
-      {/* Actions */}
-      <div 
-        style={isMobile ? {
-          position: 'fixed',
-          bottom: 16,
-          left: 16,
-          zIndex: 40,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          width: 180,
-        } : { 
-          marginTop: 20, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: 8 
-        }}
-      >
-        {isTargeting && (
+      {/* Actions (Desktop only) */}
+      {!isMobile && (
+        <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {isTargeting && (
+            <button
+              id="fly-to-btn"
+              className="btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
+              onClick={beginFlight}
+            >
+              {t('info.flyTo', { name: (selectedObject.name || 'Target').replace(/^the\s+/i, '').split(/[\s(]/)[0].toUpperCase() })}
+            </button>
+          )}
           <button
-            id="fly-to-btn"
-            className="btn-primary"
-            style={{ 
-              width: '100%', 
-              justifyContent: 'center', 
-              padding: isMobile ? '12px 16px' : '16px 32px' 
+            id="save-object-btn"
+            className="btn-ghost"
+            aria-pressed={isSaved}
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              color: isSaved ? 'var(--color-amber)' : undefined,
             }}
-            onClick={beginFlight}
+            onClick={() => toggleSaved(selectedObject)}
           >
-            {t('info.flyTo', { name: (selectedObject.name || 'Target').replace(/^the\s+/i, '').split(/[\s(]/)[0].toUpperCase() })}
+            {isSaved ? t('info.saved') : t('info.save')}
           </button>
-        )}
-        <button
-          id="save-object-btn"
-          className={isMobile ? "panel btn-ghost" : "btn-ghost"}
-          aria-pressed={isSaved}
-          style={{
-            width: '100%',
-            justifyContent: 'center',
-            color: isSaved ? 'var(--color-amber)' : undefined,
-            background: isMobile ? 'var(--color-panel)' : 'transparent',
-          }}
-          onClick={() => toggleSaved(selectedObject)}
-        >
-          {isSaved ? t('info.saved') : t('info.save')}
-        </button>
-        <button
-          id="back-to-observatory-btn"
-          className={isMobile ? "panel btn-ghost" : "btn-ghost"}
-          style={{ 
-            width: '100%', 
-            justifyContent: 'center',
-            background: isMobile ? 'var(--color-panel)' : 'transparent',
-          }}
-          onClick={returnToObservatory}
-        >
-          {t('info.back')}
-        </button>
-      </div>
+          <button
+            id="back-to-observatory-btn"
+            className="btn-ghost"
+            style={{ width: '100%', justifyContent: 'center' }}
+            onClick={returnToObservatory}
+          >
+            {t('info.back')}
+          </button>
+        </div>
+      )}
         </div>
       )}
 
@@ -308,5 +286,55 @@ export default function InfoPanel() {
       <div className="corner-bl" />
       <div className="corner-br" />
     </div>
+
+    {/* Actions (Mobile only) - Rendered outside the panel so it stays truly fixed to the viewport */}
+    {isMobile && !isMinimized && (
+      <div 
+        style={{
+          position: 'fixed',
+          bottom: 16,
+          left: 16,
+          zIndex: 40,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          width: 180,
+        }}
+      >
+        {isTargeting && (
+          <button
+            id="fly-to-btn-mobile"
+            className="btn-primary"
+            style={{ width: '100%', justifyContent: 'center', padding: '12px 16px' }}
+            onClick={beginFlight}
+          >
+            {t('info.flyTo', { name: (selectedObject.name || 'Target').replace(/^the\s+/i, '').split(/[\s(]/)[0].toUpperCase() })}
+          </button>
+        )}
+        <button
+          id="save-object-btn-mobile"
+          className="panel btn-ghost"
+          aria-pressed={isSaved}
+          style={{
+            width: '100%',
+            justifyContent: 'center',
+            color: isSaved ? 'var(--color-amber)' : undefined,
+            background: 'var(--color-panel)',
+          }}
+          onClick={() => toggleSaved(selectedObject)}
+        >
+          {isSaved ? t('info.saved') : t('info.save')}
+        </button>
+        <button
+          id="back-to-observatory-btn-mobile"
+          className="panel btn-ghost"
+          style={{ width: '100%', justifyContent: 'center', background: 'var(--color-panel)' }}
+          onClick={returnToObservatory}
+        >
+          {t('info.back')}
+        </button>
+      </div>
+    )}
+    </>
   )
 }
