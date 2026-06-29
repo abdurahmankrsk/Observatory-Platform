@@ -92,9 +92,10 @@ export default function CoordinateInput() {
         position: 'fixed',
         right: isMobile ? 8 : 24,
         bottom: isMobile ? 8 : 80,
-        width: isMobile ? 160 : 260,
-        maxHeight: isMobile ? (isMinimized ? 'auto' : '30vh') : 'auto',
-        overflowY: isMobile ? (isMinimized ? 'hidden' : 'auto') : 'visible',
+        width: isMobile ? 220 : 260,
+        maxHeight: isMobile ? (isMinimized ? 'auto' : '85vh') : 'auto',
+        display: 'flex',
+        flexDirection: 'column',
         padding: isMobile ? 12 : 20,
         zIndex: 20,
         opacity: 0,
@@ -111,7 +112,7 @@ export default function CoordinateInput() {
       </div>
 
       {!isMinimized && (
-        <>
+        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
           <div style={{ marginBottom: 12 }}>
         <label className="text-label" style={{ display: 'block', marginBottom: 4, color: 'var(--color-dim)' }}>
           {t('coord.raLabel')}
@@ -169,7 +170,7 @@ export default function CoordinateInput() {
         {identifyMutation.isPending ? t('coord.identifying') : t('coord.point')}
       </button>
       
-        </>
+        </div>
       )}
 
       {/* Corner decorations */}

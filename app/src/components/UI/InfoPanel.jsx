@@ -158,7 +158,6 @@ export default function InfoPanel() {
         padding: isMobile ? 14 : 24,
         zIndex: 20,
         opacity: 0,
-        overflowY: isMinimized ? 'hidden' : 'auto',
       }}
     >
       <div style={{ marginBottom: isMinimized ? 0 : 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -172,7 +171,7 @@ export default function InfoPanel() {
       </div>
 
       {!isMinimized && (
-        <>
+        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
           {/* Object name */}
       <h2 className="text-display" style={{
         fontSize: '1.25rem',
@@ -274,7 +273,7 @@ export default function InfoPanel() {
           {t('info.back')}
         </button>
       </div>
-        </>
+        </div>
       )}
 
       {/* Corner decorations */}
