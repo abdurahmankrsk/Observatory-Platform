@@ -196,7 +196,8 @@ export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
             varying vec2 vUv;
             void main() {
               float t = vUv.x;
-              float glow = pow(1.0 - t, 2.5);
+              // Clamp to ensure the base is never negative (prevents NaN from pow)
+              float glow = pow(max(0.0, 1.0 - t), 2.5);
               vec3 col = mix(vec3(0.9, 0.96, 1.0), vec3(0.55, 0.75, 1.0), t);
               gl_FragColor = vec4(col * glow, glow * 0.7);
             }`}
@@ -208,17 +209,12 @@ export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
       </mesh>
 
       <group rotation={[tilt, 0, 0]}>
-        {/* Event horizon — pure matte black sphere. depthWrite={false} so it
-            doesn't occlude the Stars background at any camera angle. renderOrder
-            is kept at default (0); transparent objects with depthWrite=false
-            always composite on top of what's already in the color buffer. */}
-        <mesh renderOrder={1}>
+        {/* Event horizon — pure matte black sphere. depthWrite is true by default
+            so it correctly occludes anything behind it, like the accretion disk
+            and background stars. */}
+        <mesh>
           <sphereGeometry args={[r, 64, 64]} />
-          <meshBasicMaterial
-            color="#000000"
-            depthWrite={false}
-            renderOrder={1}
-          />
+          <meshBasicMaterial color="#000000" />
         </mesh>
 
         {/* Accretion disk (lies in the XZ plane) */}

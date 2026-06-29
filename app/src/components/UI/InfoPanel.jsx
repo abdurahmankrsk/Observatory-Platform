@@ -208,7 +208,6 @@ export default function InfoPanel() {
       {/* Coordinates */}
       {(selectedObject.ra != null || selectedObject.dec != null) && (
         <>
-          <div className="divider" style={{ margin: '16px 0' }} />
           <DataRow label={t('info.ra')} value={selectedObject.ra != null ? `${selectedObject.ra.toFixed(4)}°` : null} />
           <DataRow label={t('info.dec')} value={selectedObject.dec != null ? `${selectedObject.dec.toFixed(4)}°` : null} />
         </>

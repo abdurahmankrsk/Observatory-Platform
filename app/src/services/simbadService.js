@@ -131,6 +131,32 @@ export const KNOWN_OBJECTS = {
     description: 'A face-on spiral galaxy in Ursa Major, notable for its prominent and well-defined spiral arms.',
     fun_fact: 'The Pinwheel Galaxy is nearly twice the diameter of the Milky Way, spanning about 170,000 light-years.',
   },
+  '3c 273': {
+    id: '3c_273', name: '3C 273', type: 'galaxy', otype: 'QSO',
+    ra: 187.2779, dec: 2.0524, distance_ly: 2400000000,
+    description: 'The first quasar ever identified and the brightest quasar in the sky — the luminous core of an active galaxy 2.4 billion light-years away.',
+    fun_fact: '3C 273 is so luminous it outshines its entire host galaxy by a factor of 100. It was the first object identified as a quasar, in 1963.',
+  },
+  '3c273': {
+    id: '3c_273', name: '3C 273', type: 'galaxy', otype: 'QSO',
+    ra: 187.2779, dec: 2.0524, distance_ly: 2400000000,
+    description: 'The first quasar ever identified and the brightest quasar in the sky — the luminous core of an active galaxy 2.4 billion light-years away.',
+    fun_fact: '3C 273 is so luminous it outshines its entire host galaxy by a factor of 100. It was the first object identified as a quasar, in 1963.',
+  },
+  'crab pulsar': {
+    id: 'crab_pulsar', name: 'Crab Pulsar (PSR B0531+21)', type: 'star', otype: 'Psr',
+    ra: 83.6328, dec: 22.0145, distance_ly: 6523,
+    description: 'The neutron star at the heart of the Crab Nebula, born in the supernova of 1054 AD and spinning 30 times per second.',
+    fun_fact: 'The Crab Pulsar beams radiation so precisely that it was initially mistaken for an alien signal — it was nicknamed "LGM-1" (Little Green Men).',
+    star: { spectral_type: 'Psr', temperature_k: 1600000 },
+  },
+  'psr b0531+21': {
+    id: 'crab_pulsar', name: 'Crab Pulsar (PSR B0531+21)', type: 'star', otype: 'Psr',
+    ra: 83.6328, dec: 22.0145, distance_ly: 6523,
+    description: 'The neutron star at the heart of the Crab Nebula, born in the supernova of 1054 AD and spinning 30 times per second.',
+    fun_fact: 'The Crab Pulsar beams radiation so precisely that it was initially mistaken for an alien signal — it was nicknamed "LGM-1" (Little Green Men).',
+    star: { spectral_type: 'Psr', temperature_k: 1600000 },
+  },
 }
 
 /** @type {Record<string, import('../types/astronomy.js').CelestialObject>} */
@@ -496,16 +522,29 @@ export async function identifyByCoordinates(ra, dec, radiusDeg = 0.1) {
  * @returns {import('../types/astronomy.js').CelestialObject[]}
  */
 export function getPopularObjects() {
-  const popularKeys = [
-    'sun', 'andromeda', 'orion nebula', 'vega', 'sirius', 'betelgeuse',
-    'sagittarius a*', 'horsehead nebula', 'crab nebula', 'pleiades',
-  ]
+  // ── Galaxies ──────────────────────────────────────────────────────────────
+  const galaxyKeys = ['andromeda', 'whirlpool galaxy', 'sombrero galaxy']
+  // ── Quasars / AGN ─────────────────────────────────────────────────────────
+  const quasarKeys = ['3c 273']
+  // ── Stars (including Sun) ─────────────────────────────────────────────────
+  const starKeys = ['sirius', 'vega', 'betelgeuse', 'sagittarius a*']
+  const solarStarKeys = ['sun'] // from SOLAR_SYSTEM
+  // ── Nebulas + SNR + Clusters ──────────────────────────────────────────────
+  const nebulaKeys = ['orion nebula', 'horsehead nebula', 'crab nebula', 'pleiades']
+  // ── Pulsar ────────────────────────────────────────────────────────────────
+  const pulsarKeys = ['crab pulsar']
+  // ── Solar system bodies ───────────────────────────────────────────────────
   const solarKeys = ['earth', 'mars', 'jupiter', 'saturn', 'neptune']
   const moonKeys = ['moon', 'europa']
   const asteroidKeys = ['bennu']
 
   return [
-    ...popularKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
+    ...galaxyKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
+    ...quasarKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
+    ...starKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
+    ...solarStarKeys.filter((k) => SOLAR_SYSTEM[k]).map((k) => SOLAR_SYSTEM[k]),
+    ...nebulaKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
+    ...pulsarKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
     ...solarKeys.filter((k) => SOLAR_SYSTEM[k]).map((k) => SOLAR_SYSTEM[k]),
     ...moonKeys.filter((k) => MOONS[k]).map((k) => MOONS[k]),
     ...asteroidKeys.filter((k) => ASTEROIDS[k]).map((k) => ASTEROIDS[k]),
