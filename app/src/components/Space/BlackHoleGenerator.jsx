@@ -16,7 +16,7 @@
  * Disk brightness scales with whether the metadata suggested active accretion.
  */
 import React, { useRef, useMemo } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { SIMPLEX_3D } from '../../procedural/ShaderLibrary'
 
@@ -133,6 +133,8 @@ function Jet({ params, dir = 1 }) {
 export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
   const diskRef = useRef()
   const particlesRef = useRef()
+  const photonRingRef = useRef()
+  const { camera } = useThree()
   const r = params?.radius ?? 1
 
   const diskUniforms = useMemo(() => ({
@@ -167,51 +169,38 @@ export default function BlackHoleGenerator({ params, position = [0, 0, 0] }) {
     const t = s.clock.elapsedTime
     if (diskRef.current) diskRef.current.material.uniforms.uTime.value = t
     if (particlesRef.current) particlesRef.current.rotation.y = -t * 0.6
+    // Make the photon ring always face the camera — rotate the ring plane so its
+    // normal points at the camera, keeping it at the event-horizon silhouette.
+    if (photonRingRef.current) {
+      photonRingRef.current.quaternion.copy(camera.quaternion)
+    }
   })
 
   const tilt = params?.diskTilt ?? 0.5
 
   return (
     <group position={position} rotation={[tilt, 0, 0]}>
-      {/* Event horizon — black sphere with a thin white CRESCENT on one edge so
-          you can see where the hole is without ever seeing a full ring. The rim
-          is a Fresnel term on the OPAQUE horizon sphere itself (not an additive
-          shell), so it can't flicker, stack, or bloom-flash. It's then masked to
-          a crescent locked to a fixed *screen* direction: vN is the view-space
-          normal, so vN.xy is the screen-radial direction — the bright edge stays
-          on the same side of the screen as the camera orbits, like glancing off
-          the edge of a backlit sphere. */}
+      {/* Event horizon — pure matte black sphere. No surface glow or rim shader;
+          the photon ring below handles the silhouette highlight. */}
       <mesh>
         <sphereGeometry args={[r, 64, 64]} />
-        <shaderMaterial
-          uniforms={{ uRim: { value: new THREE.Color(0.95, 0.97, 1.0) } }}
-          vertexShader={`
-            varying vec3 vN; varying vec3 vV;
-            void main(){
-              vN = normalize(normalMatrix * normal);
-              vec4 wp = modelMatrix * vec4(position, 1.0);
-              vV = normalize(cameraPosition - wp.xyz);
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }`}
-          fragmentShader={`
-            uniform vec3 uRim; varying vec3 vN; varying vec3 vV;
-            void main(){
-              // Thin rim only at the grazing silhouette (higher power = smaller).
-              float fres = pow(1.0 - abs(dot(vN, vV)), 7.0);
-              // Keep only a crescent: the part of the silhouette toward a fixed
-              // screen direction. Locked to view space so it tracks the camera.
-              vec2 dir = normalize(vec2(0.4, -1.0));            // lower edge
-              float side = dot(normalize(vN.xy + vec2(1e-4)), dir);
-              float crescent = smoothstep(0.15, 1.0, side);
-              gl_FragColor = vec4(uRim * fres * crescent, 1.0);
-            }`}
-        />
+        <meshBasicMaterial color="#000000" />
       </mesh>
 
-      {/* No photon-ring / lensing shell. Every variant of it (additive Fresnel
-          rim) read as the "weird white/glowing ring" the user disliked and was a
-          source of edge flicker. The accretion disk alone defines the hole's
-          silhouette, which looks cleaner and is flicker-free. */}
+      {/* Photon ring — a camera-facing thin ring sitting just outside the
+          event horizon. useFrame keeps it billboard-oriented so it always
+          traces the horizon silhouette regardless of camera angle. */}
+      <mesh ref={photonRingRef}>
+        <ringGeometry args={[r * 1.01, r * 1.12, 128]} />
+        <meshBasicMaterial
+          color={new THREE.Color(0.85, 0.93, 1.0)}
+          transparent
+          opacity={0.55}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
 
       {/* Accretion disk (lies in the XZ plane) */}
       {params?.accretionDisk !== false && (
