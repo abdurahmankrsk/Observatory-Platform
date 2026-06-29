@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { identifyByCoordinates } from '@/services/simbadService'
 import { fetchExoplanetByCoordinates } from '@/services/nasaService'
+import { rateLimit } from '@/lib/rateLimit'
 
 function angularSep(ra1, dec1, ra2, dec2) {
   const toRad = (d) => (d * Math.PI) / 180
@@ -10,6 +11,9 @@ function angularSep(ra1, dec1, ra2, dec2) {
 }
 
 export async function GET(request) {
+  const limited = rateLimit(request)
+  if (limited) return limited
+
   const { searchParams } = new URL(request.url)
   const ra = parseFloat(searchParams.get('ra'))
   const dec = parseFloat(searchParams.get('dec'))

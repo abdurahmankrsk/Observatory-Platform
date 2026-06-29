@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 import { searchSimbadMany } from '@/services/simbadService'
 import { fetchExoplanetByName } from '@/services/nasaService'
+import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(request) {
+  const limited = rateLimit(request)
+  if (limited) return limited
+
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q')?.trim()
 

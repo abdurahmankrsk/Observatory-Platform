@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { fetchNearEarthAsteroids } from '@/services/nasaService'
+import { rateLimit } from '@/lib/rateLimit'
 
-export async function GET() {
+export async function GET(request) {
+  const limited = rateLimit(request)
+  if (limited) return limited
+
   const apiKey = process.env.NASA_API_KEY ?? 'DEMO_KEY'
   const today = new Date()
   const tomorrow = new Date(today)
@@ -21,6 +25,7 @@ export async function GET() {
     })
     return NextResponse.json(results)
   } catch (err) {
-    return NextResponse.json({ error: 'Service Unavailable', detail: err.message, code: 503 }, { status: 503 })
+    console.error('[api/asteroids/today]', err)
+    return NextResponse.json({ error: 'Service Unavailable', detail: 'Upstream asteroid service unavailable.', code: 503 }, { status: 503 })
   }
 }

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 import { KNOWN_OBJECTS, SOLAR_SYSTEM, MOONS, ASTEROIDS } from '@/services/simbadService'
 import { fetchExoplanetByName } from '@/services/nasaService'
+import { rateLimit } from '@/lib/rateLimit'
 
-export async function GET(_request, { params }) {
+export async function GET(request, { params }) {
+  const limited = rateLimit(request)
+  if (limited) return limited
+
   const { id } = await params
   const apiKey = process.env.NASA_API_KEY ?? 'DEMO_KEY'
 

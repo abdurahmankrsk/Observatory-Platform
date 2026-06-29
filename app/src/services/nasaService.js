@@ -118,11 +118,15 @@ export async function fetchExoplanetByName(name, apiKey = 'DEMO_KEY') {
     }
   }
 
-  // Direct query fallback
+  // Direct query fallback. Escape single quotes (ADQL string-literal escaping,
+  // same as the SIMBAD service) so a name containing a quote can't break or
+  // inject into the query. Kept separate from nameLower so the cache comparison
+  // above still uses the unescaped form.
+  const escaped = nameLower.replace(/'/g, "''")
   const query =
     `SELECT TOP 1 pl_name, pl_rade, pl_masse, pl_orbper, pl_orbsmax, ` +
     `st_teff, st_rad, sy_dist, ra, dec, pl_eqt ` +
-    `FROM ps WHERE default_flag=1 AND LOWER(pl_name) LIKE '%${nameLower}%'`
+    `FROM ps WHERE default_flag=1 AND LOWER(pl_name) LIKE '%${escaped}%'`
 
   const url = new URL(EXOPLANET_BASE)
   url.searchParams.set('query', query)
