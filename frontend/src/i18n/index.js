@@ -21,8 +21,8 @@ export const LANGUAGES = [
 const en = {
   // StartScreen
   'start.status': 'SYSTEM ONLINE · COORDINATES LOCKED',
-  'start.subtitle1': 'Explore exoplanets, stars, nebulae, and asteroids',
-  'start.subtitle2': 'powered by real NASA data',
+  'start.subtitle1': 'Explore exoplanets, stars, nebulae, asteroids, black holes and other celestial objects!',
+  'start.subtitle2': 'Powered by real NASA data & the SIMBAD database',
   'start.enter': 'ENTER OBSERVATORY',
 
   // SearchPanel
@@ -108,10 +108,10 @@ const en = {
 const bs = {
   // StartScreen
   'start.status': 'SISTEM AKTIVAN · KOORDINATE ZAKLJUČANE',
-  'start.subtitle1': 'Istražite egzoplanete, zvijezde, maglice i asteroide',
+  'start.subtitle1': 'Istražite egzoplanete, zvijezde, maglice, asteroide, crne rupe i ostala nebeska tijela!',
   'start.subtitle2': 'pokretano stvarnim NASA podacima',
   'start.enter': 'UĐITE U OPSERVATORIJ',
-
+  
   // SearchPanel
   'search.title': 'PRETRAŽI OBJEKT',
   'search.placeholder': 'Andromeda, Sirius, Saturn, Bennu...',
