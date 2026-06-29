@@ -150,8 +150,8 @@ export default function InfoPanel() {
       style={{
         position: 'fixed',
         right: isMobile ? 8 : 24,
-        top: isMobile ? (isMinimized ? (isViewing ? 100 : 'auto') : 'auto') : '50%',
-        bottom: isMobile ? (isMinimized ? (isViewing ? 'auto' : 8) : (isViewing ? 100 : 8)) : undefined,
+        top: isMobile ? (isMinimized ? (isViewing ? 64 : 'auto') : 'auto') : '50%',
+        bottom: isMobile ? (isMinimized ? (isViewing ? 'auto' : 64) : (isViewing ? 100 : 8)) : undefined,
         transform: isMobile ? 'none' : 'translateY(-50%)',
         width: isMobile ? (isMinimized ? 200 : 'calc(100vw - 170px)') : 320,
         maxHeight: isMobile ? (isMinimized ? 'auto' : '40vh') : (isMinimized ? 'auto' : '80vh'),
@@ -292,7 +292,7 @@ export default function InfoPanel() {
       <div 
         style={{
           position: 'fixed',
-          bottom: 100,
+          bottom: 64,
           left: 16,
           zIndex: 40,
           display: 'flex',

@@ -22,6 +22,7 @@ import CoordinateInput from './components/UI/CoordinateInput'
 import OcularView from './components/Camera/OcularView'
 import ObservatoryScene from './components/Observatory/ObservatoryScene'
 import SpaceScene from './components/Space/SpaceScene'
+import { useIsMobile } from './hooks/useIsMobile'
 
 // ── 3D Error Boundary ──────────────────────────────────────────────────────
 class SceneErrorBoundary extends Component {
@@ -94,6 +95,7 @@ function AppContent() {
   const scene = useObservatoryStore((s) => s.scene)
   const isAutoRotating = useObservatoryStore((s) => s.isAutoRotating)
   const toggleAutoRotate = useObservatoryStore((s) => s.toggleAutoRotate)
+  const isMobile = useIsMobile()
 
   // WebGL fallback
   if (!checkWebGL()) {
@@ -176,7 +178,7 @@ function AppContent() {
       {scene === 'viewing' && (
         <div style={{
           position: 'fixed',
-          bottom: 16,
+          bottom: isMobile ? 64 : 16,
           right: 16,
           zIndex: 30,
         }}>
