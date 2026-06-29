@@ -41,14 +41,20 @@ export default function Telescope() {
 
   useEffect(() => {
     if (!tubeRef.current || !baseRef.current || scene === 'start' || scene === 'entering') return
-    const targetRotX = -(telescopeDec * Math.PI) / 180 * 0.8
+    // Map Declination (-90 to +90) into a safe Altitude (pitch) rotation.
+    // X = 0 is straight up, X = Math.PI/2 is perfectly flat.
+    // We constrain it between 0.1 and ~1.4 so it always points forwards out the slit
+    // and never flips backwards into the closed roof!
+    const fraction = Math.max(0, Math.min(1, (90 - telescopeDec) / 180))
+    const targetRotX = 0.1 + fraction * (Math.PI / 2 - 0.2)
+    
     const targetBase = (telescopeRA / 360) * Math.PI * 2
     const currentY = baseRef.current.rotation.y
     let diff = targetBase - currentY
     while (diff >  Math.PI) diff -= Math.PI * 2
     while (diff < -Math.PI) diff += Math.PI * 2
     gsap.to(baseRef.current.rotation, { y: currentY + diff, duration: 2, ease: 'power2.inOut' })
-    gsap.to(tubeRef.current.rotation, { x: targetRotX + Math.PI / 4, duration: 2, ease: 'power2.inOut' })
+    gsap.to(tubeRef.current.rotation, { x: targetRotX, duration: 2, ease: 'power2.inOut' })
   }, [telescopeRA, telescopeDec, scene])
 
   return (
