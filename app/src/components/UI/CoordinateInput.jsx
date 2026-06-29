@@ -8,6 +8,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
 import { useIdentifyMutation } from '../../hooks/useNASAData'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import { useTranslation } from '../../i18n'
 
 export default function CoordinateInput() {
@@ -17,6 +18,7 @@ export default function CoordinateInput() {
   const [error, setError] = useState('')
   const [note, setNote] = useState('')
   const { t } = useTranslation()
+  const isMobile = useIsMobile()
 
   const setTelescopePointing = useObservatoryStore((s) => s.setTelescopePointing)
   const targetObject = useObservatoryStore((s) => s.targetObject)
@@ -87,10 +89,10 @@ export default function CoordinateInput() {
       className="panel"
       style={{
         position: 'fixed',
-        right: 24,
-        bottom: 80,
-        width: 260,
-        padding: 20,
+        right: isMobile ? 8 : 24,
+        bottom: isMobile ? 64 : 80,
+        width: isMobile ? 150 : 260,
+        padding: isMobile ? 12 : 20,
         zIndex: 20,
         opacity: 0,
       }}

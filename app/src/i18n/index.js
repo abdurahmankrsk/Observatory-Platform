@@ -116,9 +116,9 @@ const bs = {
   // StartScreen
   'start.status': 'SISTEM AKTIVAN · KOORDINATE ZAKLJUČANE',
   'start.subtitle1': 'Istražite egzoplanete, zvijezde, maglice, asteroide, crne rupe i ostala nebeska tijela!',
-  'start.subtitle2': 'Omogućeno koristeči stvarne NASA i SIMBAD podatke',
+  'start.subtitle2': 'Omogućeno koristeći stvarne NASA i SIMBAD podatke',
   'start.enter': 'UĐITE U OPSERVATORIJ',
-  
+
   // SearchPanel
   'search.title': 'PRETRAŽI OBJEKT',
   'search.placeholder': 'Andromeda, Sirius, Saturn, Bennu...',

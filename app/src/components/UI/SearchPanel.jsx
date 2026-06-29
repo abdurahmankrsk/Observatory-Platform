@@ -10,6 +10,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
 import { useSearchMutation, usePopularObjects } from '../../hooks/useNASAData'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import { useTranslation } from '../../i18n'
 import { buildAppearance } from '../../procedural/ProceduralAppearanceBuilder'
 import { CelestialType } from '../../procedural/CelestialType'
@@ -89,6 +90,7 @@ export default function SearchPanel() {
   const [query, setQuery] = useState('')
   const [hasSearched, setHasSearched] = useState(false)
   const { t, tType } = useTranslation()
+  const isMobile = useIsMobile()
 
   const targetObject = useObservatoryStore((s) => s.targetObject)
   const searchResults = useObservatoryStore((s) => s.searchResults)
@@ -162,14 +164,14 @@ export default function SearchPanel() {
       className="panel"
       style={{
         position: 'fixed',
-        left: 24,
+        left: isMobile ? 8 : 24,
         top: '50%',
         transform: 'translateY(-50%)',
-        width: 300,
-        maxHeight: '75vh',
+        width: isMobile ? 160 : 300,
+        maxHeight: isMobile ? '52vh' : '75vh',
         display: 'flex',
         flexDirection: 'column',
-        padding: 20,
+        padding: isMobile ? 12 : 20,
         zIndex: 20,
         opacity: 0,
       }}

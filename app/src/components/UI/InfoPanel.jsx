@@ -10,6 +10,7 @@ import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
 import { useProceduralGen } from '../../hooks/useProceduralGen'
 import { useTranslatedObject } from '../../hooks/useNASAData'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import { formatDistance } from '../../utils/astronomyMath'
 import { isInHabitableZone } from '../../utils/colorFromTemperature'
 import { getSpectralClass } from '../../utils/colorFromTemperature'
@@ -99,6 +100,7 @@ function AsteroidInfo({ data, approach, t }) {
 export default function InfoPanel() {
   const panelRef = useRef()
   const { t, tType, lang } = useTranslation()
+  const isMobile = useIsMobile()
   const selectedObject = useObservatoryStore((s) => s.selectedObject)
   const beginFlight = useObservatoryStore((s) => s.beginFlight)
   const returnToObservatory = useObservatoryStore((s) => s.returnToObservatory)
@@ -144,14 +146,14 @@ export default function InfoPanel() {
       className="panel"
       style={{
         position: 'fixed',
-        right: 24,
+        right: isMobile ? 8 : 24,
         top: '50%',
         transform: 'translateY(-50%)',
-        width: 320,
-        maxHeight: '80vh',
+        width: isMobile ? 168 : 320,
+        maxHeight: isMobile ? '70vh' : '80vh',
         display: 'flex',
         flexDirection: 'column',
-        padding: 24,
+        padding: isMobile ? 14 : 24,
         zIndex: 20,
         opacity: 0,
         overflowY: 'auto',
