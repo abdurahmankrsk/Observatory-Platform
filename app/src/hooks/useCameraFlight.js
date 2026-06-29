@@ -142,25 +142,22 @@ export function useCameraFlight() {
       const tl = gsap.timeline({ onComplete })
       timelineRef.current = tl
 
-      // Start from current camera position
-      const startPos = camera.position.clone()
+      // Fly straight in along the +Z axis toward the object (rendered at the
+      // origin): start far back on that axis and approach to the framing
+      // distance, with x and y locked to the target's. No lateral or vertical
+      // drift — a single straight rush forward, so the warp streaks stay
+      // parallel and the camera never swings up or back.
+      const target = targetPosition.clone()
+      const runway = 60 + Math.min(Math.max(distanceLY, 0), 200)
+      const startZ = target.z + arrivalDistance + runway
+      const endZ = target.z + arrivalDistance
 
-      // Arrival position: To preserve the illusion of the warp stars flying past us,
-      // the camera must fly straight forward (parallel to the Z-axis). We add a slight
-      // elevation (Y) so that rings and accretion disks read clearly upon arrival.
-      const arrivalPos = targetPosition.length() > 0.001
-        ? targetPosition.clone().normalize().multiplyScalar(targetPosition.length() + arrivalDistance)
-        : new THREE.Vector3(0, arrivalDistance * 0.35, arrivalDistance)
+      camera.position.set(target.x, target.y, startZ)
+      camera.lookAt(target)
 
-      const proxy = {
-        x: startPos.x,
-        y: startPos.y,
-        z: startPos.z,
-        lx: 0, ly: 0, lz: 0,
-        fov: camera.fov,
-      }
+      const proxy = { z: startZ, fov: camera.fov }
 
-      // Warp stretch: narrow FOV during warp for motion feel
+      // Warp stretch: widen FOV during warp for the speed feel.
       tl.to(proxy, {
         fov: 90,
         duration: 0.5,
@@ -170,22 +167,17 @@ export function useCameraFlight() {
           camera.updateProjectionMatrix()
         },
       })
-      // Main warp transit
+      // Main straight transit.
       .to(proxy, {
-        x: arrivalPos.x,
-        y: arrivalPos.y,
-        z: arrivalPos.z,
-        lx: targetPosition.x,
-        ly: targetPosition.y,
-        lz: targetPosition.z,
+        z: endZ,
         duration: duration - 1.2,
         ease: 'expo.inOut',
         onUpdate: () => {
-          camera.position.set(proxy.x, proxy.y, proxy.z)
-          camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
+          camera.position.set(target.x, target.y, proxy.z)
+          camera.lookAt(target)
         },
       })
-      // Restore FOV on arrival
+      // Restore FOV on arrival.
       .to(proxy, {
         fov: 60,
         duration: 0.7,

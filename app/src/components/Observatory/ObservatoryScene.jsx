@@ -15,6 +15,13 @@ import gsap from 'gsap'
 import useObservatoryStore from '../../store/observatoryStore'
 import Interior from './Interior'
 
+// Dec (degrees) → telescope barrel pitch in radians (angle from vertical, 0 = up).
+// MUST mirror the mapping in Telescope.jsx so the camera looks straight down the
+// barrel and out through the slit for every declination — including near-pole
+// objects like Polaris (Dec ≈ 90°), which point nearly straight up.
+const decToBarrelPitch = (dec) =>
+  0.1 + Math.max(0, Math.min(1, (90 - dec) / 180)) * (Math.PI / 2 - 0.2)
+
 function EntryCamera() {
   const { camera } = useThree()
   const scene = useObservatoryStore((s) => s.scene)
@@ -29,15 +36,13 @@ function EntryCamera() {
   // Track the actual camera lookAt to smoothly interpolate it when the target jumps (e.g., picking first object)
   const currentLookAt = useRef(new Vector3(0, 4.5, 0))
   const currentOrbitAngle = useRef((telescopeRA / 360) * Math.PI * 2)
-  const targetRotXInit = -(telescopeDec * Math.PI) / 180 * 0.8
-  const currentDecPitch = useRef(targetRotXInit + Math.PI / 4)
+  const currentDecPitch = useRef(decToBarrelPitch(telescopeDec))
 
   useEffect(() => {
     if (tlRef.current) tlRef.current.kill()
 
     const targetRotY = (telescopeRA / 360) * Math.PI * 2
-    const targetRotX = -(telescopeDec * Math.PI) / 180 * 0.8
-    const targetPitch = targetRotX + Math.PI / 4 // The exact physical tilt of the tube
+    const targetPitch = decToBarrelPitch(telescopeDec) // exact barrel tilt (matches Telescope.jsx)
     const targetYaw = targetRotY + Math.PI
 
     // Helper to calculate exact world coordinates of the camera along the barrel axis
