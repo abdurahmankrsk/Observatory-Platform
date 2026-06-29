@@ -211,13 +211,49 @@ export function useCameraFlight() {
       const tl = gsap.timeline({ onComplete })
       timelineRef.current = tl
 
-      const proxy = { x: camera.position.x, y: camera.position.y, z: camera.position.z }
+      // The telescope points towards raRad
+      const raRad = (ra / 360) * Math.PI * 2
+      
+      // The camera should orbit to stand exactly behind the telescope (180 degrees away)
+      const currentAngle = Math.atan2(camera.position.x, camera.position.z)
+      const currentRadius = Math.hypot(camera.position.x, camera.position.z)
+      
+      let diff = (raRad + Math.PI) - currentAngle
+      while (diff > Math.PI) diff -= Math.PI * 2
+      while (diff < -Math.PI) diff += Math.PI * 2
+
+      // Compute current look point so we can lerp it smoothly
+      const currentLook = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(5).add(camera.position)
+
+      // Target lookAt is aiming directly out the slit (raRad)
+      const targetLookX = Math.sin(raRad) * 5
+      const targetLookZ = Math.cos(raRad) * 5
+      // Map Dec so we look up at the slit, but not down into the floor
+      const targetLookY = 2.5 + Math.max(0, Math.sin((dec * Math.PI) / 180)) * 3
+
+      const proxy = { 
+        angle: currentAngle,
+        radius: currentRadius,
+        camY: camera.position.y,
+        lx: currentLook.x, 
+        ly: currentLook.y, 
+        lz: currentLook.z 
+      }
 
       tl.to(proxy, {
-        duration: 1.5,
+        angle: currentAngle + diff,
+        radius: 2.5,
+        camY: 2.5,
+        lx: targetLookX,
+        ly: targetLookY,
+        lz: targetLookZ,
+        duration: 2.0,
         ease: 'power2.inOut',
         onUpdate: () => {
-          camera.lookAt(0, 2 + Math.sin((dec * Math.PI) / 180) * 2, 5)
+          // Move camera in an orbit
+          camera.position.set(Math.sin(proxy.angle) * proxy.radius, proxy.camY, Math.cos(proxy.angle) * proxy.radius)
+          // Look out the slit
+          camera.lookAt(proxy.lx, proxy.ly, proxy.lz)
         },
       })
 
