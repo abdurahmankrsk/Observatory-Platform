@@ -52,12 +52,19 @@ export const KNOWN_OBJECTS = {
     fun_fact: 'Sirius is actually a binary system — Sirius A orbited by the white dwarf Sirius B.',
     star: { temperature_k: 9940, radius_solar: 1.711, spectral_type: 'A1V' },
   },
-  betelgeuse: {
-    id: 'betelgeuse', name: 'Betelgeuse', type: 'star',
-    ra: 88.79292, dec: 7.40706, distance_ly: 700,
-    description: 'A red supergiant in Orion, one of the largest known stars, expected to explode as a supernova.',
-    fun_fact: 'If Betelgeuse replaced our Sun, its surface would extend past Jupiter\'s orbit.',
-    star: { temperature_k: 3500, radius_solar: 887, spectral_type: 'M1-M2' },
+  'betelgeuse': {
+    id: 'betelgeuse', name: 'Betelgeuse (α Orionis)', type: 'star',
+    ra: 88.7929, dec: 7.4070, distance_ly: 642.5,
+    description: 'A red supergiant star of spectral type M1-2 and one of the largest stars visible to the naked eye.',
+    fun_fact: 'If Betelgeuse were at the center of the Solar System, its surface would extend past the asteroid belt, engulfing Mercury, Venus, Earth, and Mars.',
+    star: { spectral_type: 'M1-2', temperature_k: 3500 },
+  },
+  'polaris': {
+    id: 'polaris', name: 'Polaris (North Star)', type: 'star',
+    ra: 37.9545, dec: 89.2641, distance_ly: 433,
+    description: 'The North Star, a yellow supergiant that closely aligns with Earth\'s axis of rotation in the northern sky.',
+    fun_fact: 'Polaris is actually a triple star system, consisting of the main yellow supergiant and two smaller companions.',
+    star: { spectral_type: 'F7Ib', temperature_k: 6000 },
   },
   sun: {
     id: 'sun', name: 'Sun', type: 'star', distance_au: 1.0,
@@ -84,10 +91,16 @@ export const KNOWN_OBJECTS = {
     fun_fact: 'In 2022 the Event Horizon Telescope released the first direct image of Sagittarius A*\'s glowing accretion ring.',
   },
   'horsehead nebula': {
-    id: 'horsehead_nebula', name: 'Horsehead Nebula (IC 434)', type: 'nebula',
-    ra: 85.2448, dec: -2.4583, distance_ly: 1375,
-    description: 'A dark nebula in Orion shaped like a chess knight, silhouetted against glowing ionized hydrogen.',
-    fun_fact: 'The Horsehead Nebula is slowly evaporating due to ultraviolet radiation from nearby hot stars.',
+    id: 'horsehead_nebula', name: 'Horsehead Nebula (Barnard 33)', type: 'nebula', otype: 'DNe',
+    ra: 85.2458, dec: -2.4583, distance_ly: 1375,
+    description: 'A small dark nebula in the constellation Orion. The horse-head feature is dark because it is an opaque dust cloud that lies in front of the bright emission nebula IC 434.',
+    fun_fact: 'The heavy concentrations of dust in the Horsehead Nebula region results in alternating sections of nearly complete opacity and transparency.',
+  },
+  'veil nebula': {
+    id: 'veil_nebula', name: 'Veil Nebula (NGC 6960)', type: 'nebula', otype: 'SNR',
+    ra: 311.5333, dec: 30.7167, distance_ly: 2400,
+    description: 'A cloud of heated and ionized gas and dust in the constellation Cygnus. It constitutes the visible portions of the Cygnus Loop, a massive supernova remnant.',
+    fun_fact: 'The source supernova was a star 20 times more massive than the Sun which exploded between 10,000 and 20,000 years ago.',
   },
   'crab nebula': {
     id: 'crab_nebula', name: 'Crab Nebula (M1)', type: 'nebula',
@@ -394,6 +407,7 @@ export async function searchSimbad(query) {
     if (queryLower.includes(key) || (key.length >= 4 && key.includes(queryLower))) return obj
   }
 
+  // If the query didn't match any local curated objects, fallback to live SIMBAD
   const cacheKey = `simbad:${queryLower}`
   const cached = getCache(cacheKey, CACHE_TTL)
   if (cached !== null) return cached
@@ -450,6 +464,11 @@ export async function searchSimbadMany(query, limit = 12) {
     if (queryLower.includes(key) || (key.length >= 4 && key.includes(queryLower))) add(obj)
   }
 
+  // If we found matches in our curated offline catalogs, return them immediately.
+  // This avoids 20+ second timeouts when SIMBAD is under heavy load or offline.
+  if (results.length > 0) return results
+
+  // If no local matches, fallback to live SIMBAD TAP queries
   const cacheKey = `simbad_many:${queryLower}:${limit}`
   let cached = getCache(cacheKey, CACHE_TTL)
 
@@ -527,10 +546,10 @@ export function getPopularObjects() {
   // ── Quasars / AGN ─────────────────────────────────────────────────────────
   const quasarKeys = ['3c 273']
   // ── Stars (including Sun) ─────────────────────────────────────────────────
-  const starKeys = ['sirius', 'vega', 'betelgeuse', 'sagittarius a*']
+  const starKeys = ['sirius', 'vega', 'polaris', 'betelgeuse', 'sagittarius a*']
   const solarStarKeys = ['sun'] // from SOLAR_SYSTEM
   // ── Nebulas + SNR + Clusters ──────────────────────────────────────────────
-  const nebulaKeys = ['orion nebula', 'horsehead nebula', 'crab nebula', 'pleiades']
+  const nebulaKeys = ['orion nebula', 'veil nebula', 'horsehead nebula', 'crab nebula', 'pleiades']
   // ── Pulsar ────────────────────────────────────────────────────────────────
   const pulsarKeys = ['crab pulsar']
   // ── Solar system bodies ───────────────────────────────────────────────────
