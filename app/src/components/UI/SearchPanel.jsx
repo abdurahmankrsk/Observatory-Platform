@@ -109,11 +109,12 @@ export default function SearchPanel() {
     anime({
       targets: panelRef.current,
       translateX: [-320, 0],
+      translateY: isMobile ? [0, 0] : ['-50%', '-50%'],
       opacity: [0, 1],
       duration: 700,
       easing: 'spring(1, 80, 10, 0)',
     })
-  }, [])
+  }, [isMobile])
 
   // Abort any in-flight request on unmount.
   useEffect(() => () => { if (abortRef.current) abortRef.current.abort() }, [])
@@ -167,7 +168,7 @@ export default function SearchPanel() {
       style={{
         position: 'fixed',
         left: isMobile ? 8 : 24,
-        top: isMobile ? 120 : '50%',
+        top: isMobile ? 16 : '50%',
         transform: isMobile ? 'none' : 'translateY(-50%)',
         width: isMobile ? 220 : 300,
         maxHeight: isMobile ? (isMinimized ? 'auto' : '45vh') : (isMinimized ? 'auto' : '75vh'),
@@ -239,7 +240,7 @@ export default function SearchPanel() {
           )}
 
           {/* Object list — search results, or saved + popular when not searching */}
-          <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+          <div style={{ overflowY: 'auto', flex: '0 1 auto', minHeight: 0 }}>
             {showingResults ? (
               <>
                 <p className="text-label" style={{ marginBottom: 8 }}>

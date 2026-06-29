@@ -112,7 +112,7 @@ export default function CoordinateInput() {
       </div>
 
       {!isMinimized && (
-        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+        <div style={{ overflowY: 'auto', flex: '0 1 auto', minHeight: 0 }}>
           <div style={{ marginBottom: 12 }}>
         <label className="text-label" style={{ display: 'block', marginBottom: 4, color: 'var(--color-dim)' }}>
           {t('coord.raLabel')}
