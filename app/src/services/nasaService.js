@@ -210,7 +210,7 @@ export async function fetchNearEarthAsteroids(startDate, endDate, apiKey = 'DEMO
 
   for (const [dateKey, asteroidList] of Object.entries(nearEarthObjects)) {
     for (const ast of asteroidList) {
-      const name = (ast.name ?? 'Unknown').replace(/[()]/g, '').trim()
+      const name = (ast.name ?? 'Unknown').replace(/^[()]+|[()]+$/g, '').trim()
       const diameterData = ast.estimated_diameter?.kilometers ?? {}
       const closeApproaches = ast.close_approach_data ?? []
 

@@ -404,7 +404,7 @@ export async function searchSimbad(query) {
   }
 
   for (const [key, obj] of Object.entries(KNOWN_OBJECTS)) {
-    if (queryLower.includes(key) || (key.length >= 4 && key.includes(queryLower))) return obj
+    if (key.includes(queryLower) || (key.length >= 4 && queryLower.includes(key))) return obj
   }
 
   // If the query didn't match any local curated objects, fallback to live SIMBAD
@@ -461,7 +461,7 @@ export async function searchSimbadMany(query, limit = 12) {
     else if (catalog[queryAlt]) add(catalog[queryAlt])
   }
   for (const [key, obj] of Object.entries(KNOWN_OBJECTS)) {
-    if (queryLower.includes(key) || (key.length >= 4 && key.includes(queryLower))) add(obj)
+    if (key.includes(queryLower) || (key.length >= 4 && queryLower.includes(key))) add(obj)
   }
 
   // If we found matches in our curated offline catalogs, return them immediately.
