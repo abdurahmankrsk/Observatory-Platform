@@ -5,7 +5,7 @@
  * Shows detailed data about the selected celestial object.
  * Slides in from the right on entering 'viewing' state.
  */
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import anime from 'animejs'
 import useObservatoryStore from '../../store/observatoryStore'
 import { useProceduralGen } from '../../hooks/useProceduralGen'

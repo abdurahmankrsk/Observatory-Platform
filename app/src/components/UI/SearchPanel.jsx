@@ -167,7 +167,7 @@ export default function SearchPanel() {
       style={{
         position: 'fixed',
         left: isMobile ? 8 : 24,
-        top: isMobile ? 64 : '50%',
+        top: isMobile ? 80 : '50%',
         transform: isMobile ? 'none' : 'translateY(-50%)',
         width: isMobile ? 180 : 300,
         maxHeight: isMobile ? (isMinimized ? 'auto' : '35vh') : (isMinimized ? 'auto' : '75vh'),
@@ -239,7 +239,7 @@ export default function SearchPanel() {
           )}
 
           {/* Object list — search results, or saved + popular when not searching */}
-          <div style={{ overflowY: 'auto', flex: 1 }}>
+          <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
             {showingResults ? (
               <>
                 <p className="text-label" style={{ marginBottom: 8 }}>

@@ -111,7 +111,7 @@ export default function StartScreen() {
         {/* Observatory label */}
         <p
           className="text-label"
-          style={{ marginBottom: 16, letterSpacing: '0.4em', color: 'var(--color-blue)', opacity: 0.7, textAlign: 'center', width: '100%', padding: '0 16px' }}
+          style={{ marginBottom: 16, letterSpacing: '0.4em', textIndent: '0.4em', color: 'var(--color-blue)', opacity: 0.7, textAlign: 'center', width: '100%', padding: '0 16px' }}
           ref={subtitleRef}
         >
           {t('start.status')}
@@ -145,6 +145,7 @@ export default function StartScreen() {
             fontSize: '0.875rem',
             color: 'var(--color-grey)',
             letterSpacing: '0.08em',
+            textIndent: '0.08em',
             marginBottom: 48,
             textAlign: 'center',
             maxWidth: 400,
