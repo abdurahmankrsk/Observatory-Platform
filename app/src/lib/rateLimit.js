@@ -31,6 +31,9 @@ function clientIp(request) {
  * @returns {import('next/server').NextResponse|null}
  */
 export function rateLimit(request, { windowMs = WINDOW_MS, max = MAX_REQUESTS } = {}) {
+  // Disable rate limiting during local development to prevent silent API failures
+  if (process.env.NODE_ENV === 'development') return null;
+
   const ip = clientIp(request)
   const now = Date.now()
 

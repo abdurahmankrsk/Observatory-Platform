@@ -1,5 +1,4 @@
 import './globals.css'
-import { Analytics } from '@vercel/analytics/next'
 
 export const metadata = {
   title: 'AstroObservatory',
@@ -12,7 +11,6 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body style={{ margin: 0, padding: 0, overflow: 'hidden', width: '100vw', height: '100vh' }}>
         {children}
-        <Analytics />
       </body>
     </html>
   )

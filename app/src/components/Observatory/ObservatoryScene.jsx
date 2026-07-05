@@ -232,7 +232,7 @@ export default function ObservatoryScene() {
         gl={{ antialias: true, alpha: false }}
         camera={{ position: [0, 5, 35], fov: 70, near: 0.01, far: 500 }}
         dpr={Math.min(window.devicePixelRatio, 2)}
-        shadows
+        shadows={{ type: 1 /* THREE.PCFShadowMap */ }}
       >
         <Suspense fallback={null}>
           <Interior />

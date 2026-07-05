@@ -24,6 +24,16 @@ import ObservatoryScene from './components/Observatory/ObservatoryScene'
 import SpaceScene from './components/Space/SpaceScene'
 import { useIsMobile } from './hooks/useIsMobile'
 
+const originalWarn = console.warn
+if (typeof window !== 'undefined') {
+  console.warn = (...args) => {
+    if (typeof args[0] === 'string' && (args[0].includes('THREE.Clock') || args[0].includes('THREE.WebGLShadowMap'))) {
+      return
+    }
+    originalWarn(...args)
+  }
+}
+
 // ── 3D Error Boundary ──────────────────────────────────────────────────────
 class SceneErrorBoundary extends Component {
   constructor(props) {
