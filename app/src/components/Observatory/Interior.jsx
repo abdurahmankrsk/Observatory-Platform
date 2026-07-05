@@ -38,7 +38,7 @@ function Door() {
     gsap.to(rightRef.current.rotation, { y: -Math.PI / 2, duration: 0.8, delay: 0.5, ease: 'power2.inOut' })
   }, [scene])
 
-  const postH = DOOR_H + 0.5
+  const postH = DOOR_H + 0.3
 
   return (
     <group>
@@ -279,8 +279,8 @@ export default function Interior() {
         return (
           <mesh
             key={i}
-            position={[Math.cos(angle) * 7.7, 4, Math.sin(angle) * 7.7]}
-            rotation={[0, -angle, 0]}
+            position={[Math.cos(angle) * 7.91, 4, Math.sin(angle) * 7.91]}
+            rotation={[0, -angle - Math.PI / 2, 0]}
           >
             <boxGeometry args={[0.14, 8, 0.18]} />
             <meshStandardMaterial color="#B8BEC8" metalness={0.6} roughness={0.4} />
@@ -294,8 +294,8 @@ export default function Interior() {
         return (
           <mesh
             key={`panel-${i}`}
-            position={[Math.cos(angle) * 7.82, 1.5, Math.sin(angle) * 7.82]}
-            rotation={[0, -angle, 0]}
+            position={[Math.cos(angle) * 7.97, 1.5, Math.sin(angle) * 7.97]}
+            rotation={[0, -angle - Math.PI / 2, 0]}
           >
             <boxGeometry args={[1.4, 2.6, 0.06]} />
             <meshStandardMaterial color="#A6ACB6" metalness={0.2} roughness={0.7} side={THREE.BackSide} />
@@ -314,7 +314,7 @@ export default function Interior() {
         if (Math.abs(Math.sin(angle) - 1) < 0.02) return null // door is at +Z
         const x = Math.cos(angle), z = Math.sin(angle)
         return (
-          <group key={`butt-${i}`} position={[x * 8.55, 0, z * 8.55]} rotation={[0, -angle, 0]}>
+          <group key={`butt-${i}`} position={[x * 8.55, 0, z * 8.55]} rotation={[0, -angle - Math.PI / 2, 0]}>
             <mesh position={[0, 4.4, 0]} castShadow>
               <boxGeometry args={[0.34, 8.3, 0.28]} />
               <meshStandardMaterial color="#A8AEB8" metalness={0.25} roughness={0.55} />
@@ -453,36 +453,14 @@ export default function Interior() {
           Angles are panel-bay centres (135°, 225° = π·0.75, π·1.25) so the unit
           sits between the vertical pilasters (every 30°) instead of clipping one. */}
       <ShelfUnit
-        position={[Math.cos(Math.PI * 0.75) * 7.85, 2.2, Math.sin(Math.PI * 0.75) * 7.85]}
+        position={[Math.cos(Math.PI * 0.75) * 7.92, 2.2, Math.sin(Math.PI * 0.75) * 7.92]}
         rotation={[0, -Math.PI * 0.75 - Math.PI / 2, 0]}
       />
       <ShelfUnit
-        position={[Math.cos(Math.PI * 1.25) * 7.85, 2.2, Math.sin(Math.PI * 1.25) * 7.85]}
+        position={[Math.cos(Math.PI * 1.25) * 7.92, 2.2, Math.sin(Math.PI * 1.25) * 7.92]}
         rotation={[0, -Math.PI * 1.25 - Math.PI / 2, 0]}
       />
 
-      {/* ── Star Chart Panel ──────────────────────────────────────────── */}
-      <group
-        position={[Math.cos(Math.PI * 0.85) * 7.6, 5.0, Math.sin(Math.PI * 0.85) * 7.6]}
-        rotation={[0, -Math.PI * 0.85, 0]}
-      >
-        {/* Frame */}
-        <mesh>
-          <boxGeometry args={[1.8, 1.2, 0.06]} />
-          <meshStandardMaterial color="#0D1C2C" metalness={0.5} roughness={0.5} />
-        </mesh>
-        {/* Chart surface */}
-        <mesh position={[0, 0, 0.04]}>
-          <planeGeometry args={[1.65, 1.08]} />
-          <meshBasicMaterial color="#020A18" />
-        </mesh>
-        {/* Constellation lines (emissive) */}
-        <mesh position={[0, 0, 0.045]}>
-          <planeGeometry args={[1.60, 1.02]} />
-          <meshBasicMaterial color="#2266AA" transparent opacity={0.28} wireframe />
-        </mesh>
-        <pointLight position={[0, 0, 0.4]} color="#3388DD" intensity={0.5} distance={2.5} decay={2} />
-      </group>
 
       {/* ── Observation Bench ─────────────────────────────────────────── */}
       <mesh position={[0, 0.28, 5.5]} receiveShadow>
@@ -528,8 +506,8 @@ export default function Interior() {
       {[0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].map((angle, i) => (
         <group
           key={`sconce-${i}`}
-          position={[Math.cos(angle) * 7.4, 5.2, Math.sin(angle) * 7.4]}
-          rotation={[0, -angle, 0]}
+          position={[Math.cos(angle) * 7.94, 5.2, Math.sin(angle) * 7.94]}
+          rotation={[0, -angle - Math.PI / 2, 0]}
         >
           {/* Sconce housing box */}
           <mesh>
