@@ -547,12 +547,14 @@ export function getPopularObjects() {
   // ── Quasars / AGN ─────────────────────────────────────────────────────────
   const quasarKeys = ['3c 273']
   // ── Stars (including Sun) ─────────────────────────────────────────────────
-  const starKeys = ['sirius', 'vega', 'polaris', 'betelgeuse', 'sagittarius a*']
+  const starKeys = ['sirius', 'vega', 'polaris', 'betelgeuse']
   const solarStarKeys = ['sun'] // from SOLAR_SYSTEM
-  // ── Nebulas + SNR + Clusters ──────────────────────────────────────────────
-  const nebulaKeys = ['orion nebula', 'veil nebula', 'horsehead nebula', 'crab nebula', 'pleiades']
   // ── Pulsar ────────────────────────────────────────────────────────────────
   const pulsarKeys = ['crab pulsar']
+  // ── Black Hole ────────────────────────────────────────────────────────────
+  const blackHoleKeys = ['sagittarius a*']
+  // ── Nebulas + SNR + Clusters ──────────────────────────────────────────────
+  const nebulaKeys = ['orion nebula', 'veil nebula', 'horsehead nebula', 'crab nebula', 'pleiades']
   // ── Solar system bodies ───────────────────────────────────────────────────
   const solarKeys = ['earth', 'mars', 'jupiter', 'saturn', 'neptune']
   const moonKeys = ['moon', 'europa']
@@ -563,8 +565,9 @@ export function getPopularObjects() {
     ...quasarKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
     ...starKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
     ...solarStarKeys.filter((k) => SOLAR_SYSTEM[k]).map((k) => SOLAR_SYSTEM[k]),
-    ...nebulaKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
     ...pulsarKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
+    ...blackHoleKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
+    ...nebulaKeys.filter((k) => KNOWN_OBJECTS[k]).map((k) => KNOWN_OBJECTS[k]),
     ...solarKeys.filter((k) => SOLAR_SYSTEM[k]).map((k) => SOLAR_SYSTEM[k]),
     ...moonKeys.filter((k) => MOONS[k]).map((k) => MOONS[k]),
     ...asteroidKeys.filter((k) => ASTEROIDS[k]).map((k) => ASTEROIDS[k]),
