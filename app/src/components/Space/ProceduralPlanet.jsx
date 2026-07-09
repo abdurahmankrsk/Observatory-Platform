@@ -119,61 +119,7 @@ varying vec3 vPosition;
 varying vec3 vWorldNormal;
 varying vec3 vViewDir;
 
-// ── Earth continent field (Gaussian influence + noise → fractal coastlines) ──
-float earthContinent(vec3 nDir) {
-  float lat = asin(nDir.y);
-  float lon = atan(nDir.z, nDir.x);
-
-  // Soft Gaussian influence: high near continents, zero in open ocean
-  float inf = 0.0;
-
-  // Africa (elongated N-S)
-  inf = max(inf, 0.92*exp(-3.0*(pow((lon-0.30)/0.40,2.0)+pow((lat-0.08)/0.52,2.0))));
-  inf = max(inf, 0.70*exp(-5.0*(pow((lon+0.02)/0.18,2.0)+pow((lat-0.10)/0.16,2.0))));
-  inf = max(inf, 0.55*exp(-7.0*(pow((lon-0.78)/0.12,2.0)+pow((lat-0.06)/0.10,2.0))));
-  inf = max(inf, 0.45*exp(-8.0*(pow((lon-0.82)/0.06,2.0)+pow((lat+0.35)/0.12,2.0))));
-
-  // Europe
-  inf = max(inf, 0.72*exp(-4.5*(pow((lon-0.12)/0.28,2.0)+pow((lat-0.82)/0.18,2.0))));
-  inf = max(inf, 0.55*exp(-6.0*(pow((lon-0.22)/0.12,2.0)+pow((lat-1.08)/0.14,2.0))));
-  inf = max(inf, 0.40*exp(-10.0*(pow((lon+0.05)/0.05,2.0)+pow((lat-0.93)/0.06,2.0))));
-  inf = max(inf, 0.50*exp(-7.0*(pow((lon+0.06)/0.08,2.0)+pow((lat-0.70)/0.08,2.0))));
-  inf = max(inf, 0.42*exp(-9.0*(pow((lon-0.22)/0.05,2.0)+pow((lat-0.72)/0.09,2.0))));
-
-  // Asia (massive, many overlapping blobs)
-  inf = max(inf, 0.95*exp(-1.2*(pow((lon-1.20)/0.90,2.0)+pow((lat-0.92)/0.30,2.0))));
-  inf = max(inf, 0.78*exp(-2.5*(pow((lon-1.88)/0.38,2.0)+pow((lat-0.55)/0.30,2.0))));
-  inf = max(inf, 0.72*exp(-5.0*(pow((lon-1.35)/0.14,2.0)+pow((lat-0.25)/0.25,2.0))));
-  inf = max(inf, 0.60*exp(-4.5*(pow((lon-1.78)/0.16,2.0)+pow((lat-0.15)/0.18,2.0))));
-  inf = max(inf, 0.60*exp(-5.5*(pow((lon-0.80)/0.14,2.0)+pow((lat-0.36)/0.14,2.0))));
-  inf = max(inf, 0.65*exp(-4.0*(pow((lon-0.55)/0.28,2.0)+pow((lat-0.60)/0.16,2.0))));
-  inf = max(inf, 0.40*exp(-5.0*(pow((lon-1.92)/0.30,2.0)+pow((lat+0.08)/0.06,2.0))));
-  inf = max(inf, 0.38*exp(-9.0*(pow((lon-2.40)/0.06,2.0)+pow((lat-0.62)/0.15,2.0))));
-
-  // North America
-  inf = max(inf, 0.88*exp(-2.0*(pow((lon+1.65)/0.55,2.0)+pow((lat-0.85)/0.30,2.0))));
-  inf = max(inf, 0.70*exp(-3.5*(pow((lon+1.50)/0.35,2.0)+pow((lat-0.55)/0.18,2.0))));
-  inf = max(inf, 0.55*exp(-5.0*(pow((lon+1.78)/0.14,2.0)+pow((lat-0.35)/0.16,2.0))));
-  inf = max(inf, 0.55*exp(-5.5*(pow((lon+2.62)/0.20,2.0)+pow((lat-1.10)/0.12,2.0))));
-  inf = max(inf, 0.60*exp(-5.0*(pow((lon+0.72)/0.17,2.0)+pow((lat-1.20)/0.14,2.0))));
-
-  // South America
-  inf = max(inf, 0.82*exp(-2.5*(pow((lon+0.88)/0.25,2.0)+pow((lat+0.15)/0.48,2.0))));
-  inf = max(inf, 0.60*exp(-5.0*(pow((lon+1.22)/0.18,2.0)+pow((lat-0.08)/0.12,2.0))));
-  inf = max(inf, 0.50*exp(-5.0*(pow((lon+1.15)/0.10,2.0)+pow((lat+0.70)/0.22,2.0))));
-
-  // Australia
-  inf = max(inf, 0.70*exp(-3.5*(pow((lon-2.32)/0.30,2.0)+pow((lat+0.42)/0.18,2.0))));
-  inf = max(inf, 0.32*exp(-9.0*(pow((lon-2.95)/0.05,2.0)+pow((lat+0.68)/0.08,2.0))));
-
-  // Antarctica
-  inf = max(inf, 0.85*exp(-4.5*pow((lat+1.30)/0.22,2.0)));
-
-  // Fine noise perturbs the coastline threshold — not the shape
-  float cn = snoise(nDir * 12.0) * 0.05;
-  float land = smoothstep(0.34 + cn, 0.42 + cn, inf);
-  return clamp(land, 0.0, 1.0);
-}
+// Removed Earth continents function to revert to base procedural generation
 
 void main() {
   // Generate terrain height using fBm
@@ -223,17 +169,16 @@ void main() {
     float pLon = atan(nDir.z, nDir.x);
 
     if (uPlanetFeature < 1.5) {
-      // Neptune Great Dark Spot
+      // Neptune Great Dark Spot (no bright companion cloud)
       float dLat = (pLat + 0.35) * 2.8;
       float dLon = (pLon - 0.5) * 1.6;
       float sDist = sqrt(dLat*dLat + dLon*dLon);
       float sMask = 1.0 - smoothstep(0.3, 0.65, sDist);
       float sTurb = snoise(nDir * 6.0 + vec3(uTime * 0.02)) * 0.15;
-      surface = mix(surface, surface * (0.25 + sTurb), sMask);
-      // Bright companion cloud
-      float cDist = length(vec2((pLat + 0.17) * 4.0, (pLon - 0.85) * 3.0));
-      float cMask = (1.0 - smoothstep(0.2, 0.5, cDist)) * 0.35;
-      surface = mix(surface, vec3(0.55, 0.65, 0.8), cMask);
+      
+      // Make it bluer and lighter instead of purely dark
+      vec3 darkSpotColor = surface * vec3(0.5, 0.65, 0.9) * (0.6 + sTurb);
+      surface = mix(surface, darkSpotColor, sMask);
 
     } else if (uPlanetFeature < 2.5) {
       // Jupiter Great Red Spot
@@ -271,23 +216,6 @@ void main() {
         surface = mix(surface, surface * vec3(0.35, 0.42, 0.55), vortex * 0.75);
       }
 
-    } else if (uPlanetFeature < 4.5) {
-      // Earth Realistic Continents
-      float landMask = earthContinent(nDir);
-      float terrainH = fbm(nDir * 4.0 + uSeed * 5.0);
-      float desert = smoothstep(0.15, 0.4, abs(pLat)) * (1.0 - smoothstep(0.55, 0.8, abs(pLat)));
-      desert *= smoothstep(0.45, 0.6, terrainH);
-      vec3 greenLand = mix(uTerrainColor, vec3(0.18, 0.38, 0.12), 0.5);
-      vec3 desertCol = vec3(0.62, 0.52, 0.32);
-      vec3 mountCol = vec3(0.45, 0.38, 0.30);
-      vec3 tColor = mix(greenLand, desertCol, desert);
-      tColor = mix(tColor, mountCol, smoothstep(0.65, 0.78, terrainH) * 0.6);
-      float iceBlend = smoothstep(1.05, 1.25, abs(pLat));
-      tColor = mix(tColor, uIceColor, iceBlend);
-      vec3 oceanCol = mix(uOceanColor * 0.8, uOceanColor * 1.3, smoothstep(0.3, 0.5, landMask) * 0.5);
-      surface = mix(oceanCol, tColor, landMask);
-      float oceanIce = smoothstep(1.15, 1.35, abs(pLat)) * (1.0 - landMask);
-      surface = mix(surface, uIceColor * 0.95, oceanIce);
     }
   }
 

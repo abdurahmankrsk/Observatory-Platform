@@ -145,6 +145,10 @@ export const lightYearsToAU = (ly) => ly * LY_TO_AU
  * Automatically picks the best unit.
  */
 export function formatDistance(object) {
+  if (object && object.name && object.name.toLowerCase() === 'earth') {
+    return '0 km'
+  }
+
   if (object.distance_ly != null) {
     const ly = object.distance_ly
     if (ly >= 1e6) return `${(ly / 1e6).toFixed(2)}M ly`
