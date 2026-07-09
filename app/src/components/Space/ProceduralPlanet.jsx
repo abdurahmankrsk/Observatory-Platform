@@ -169,11 +169,9 @@ float earthContinent(vec3 nDir) {
   // Antarctica
   inf = max(inf, 0.85*exp(-4.5*pow((lat+1.30)/0.22,2.0)));
 
-  // Fractal coastlines: fbm noise + influence field thresholding
-  float coastNoise = fbm(nDir * 3.5);
-  float elevation = coastNoise * 0.35 + inf * 0.75;
-  float seaLevel = 0.45;
-  float land = smoothstep(seaLevel - 0.04, seaLevel + 0.04, elevation);
+  // Fine noise perturbs the coastline threshold — not the shape
+  float cn = snoise(nDir * 12.0) * 0.05;
+  float land = smoothstep(0.34 + cn, 0.42 + cn, inf);
   return clamp(land, 0.0, 1.0);
 }
 
