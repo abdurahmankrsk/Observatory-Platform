@@ -111,12 +111,56 @@ uniform float uSurfaceStyle;   // 0 = terran, 1 = banded (gas/ice giant), 2 = la
 uniform vec3 uBandColorA;
 uniform vec3 uBandColorB;
 uniform float uPolarIce;       // 1 = polar ice caps, 0 = none (airless rock)
+uniform float uPlanetFeature;  // 0=none, 1=neptune, 2=jupiter, 3=saturn, 4=earth
 
 varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vPosition;
 varying vec3 vWorldNormal;
 varying vec3 vViewDir;
+
+// ── Earth continent SDF (lat/lon ellipses → recognisable landmasses) ──
+float earthContinent(vec3 nDir) {
+  float lat = asin(nDir.y);
+  float lon = atan(nDir.z, nDir.x);
+  float land = 0.0;
+  float d;
+  // Africa
+  d = length(vec2((lon-0.26)/0.45, (lat-0.26)/0.35)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-0.44)/0.30, (lat+0.09)/0.42)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-0.78)/0.15, (lat-0.12)/0.12)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-0.82)/0.06, (lat+0.35)/0.13)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  // Europe
+  d = length(vec2((lon-0.07)/0.22, (lat-0.82)/0.18)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-0.22)/0.12, (lat-1.08)/0.14)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon+0.05)/0.05, (lat-0.92)/0.08)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  // Asia
+  d = length(vec2((lon-1.22)/0.85, (lat-0.95)/0.28)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-1.83)/0.35, (lat-0.58)/0.30)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-1.75)/0.18, (lat-0.17)/0.20)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-1.35)/0.15, (lat-0.30)/0.25)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-0.82)/0.15, (lat-0.38)/0.15)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-0.55)/0.30, (lat-0.58)/0.22)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-1.92)/0.25, (lat+0.10)/0.08)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon-2.38)/0.06, (lat-0.62)/0.14)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  // North America
+  d = length(vec2((lon+1.65)/0.55, (lat-0.82)/0.30)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon+1.74)/0.18, (lat-0.38)/0.18)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon+2.62)/0.22, (lat-1.10)/0.12)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon+0.70)/0.18, (lat-1.20)/0.14)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  // South America
+  d = length(vec2((lon+0.82)/0.28, (lat+0.22)/0.50)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon+1.22)/0.20, (lat-0.08)/0.15)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  d = length(vec2((lon+1.17)/0.12, (lat+0.65)/0.25)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  // Australia
+  d = length(vec2((lon-2.32)/0.32, (lat+0.44)/0.18)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  // Antarctica
+  land = max(land, 1.0-smoothstep(-1.22, -1.10, lat));
+  // Noisy coastlines for natural look
+  float cn = snoise(nDir * 10.0) * 0.14;
+  land = smoothstep(0.35+cn, 0.55, land);
+  return clamp(land, 0.0, 1.0);
+}
 
 void main() {
   // Generate terrain height using fBm
@@ -157,6 +201,75 @@ void main() {
   } else {
     surface = lava;
     emissive = lavaEmissive;
+  }
+
+  // ── Planet-specific features ──
+  if (uPlanetFeature > 0.5) {
+    vec3 nDir = normalize(vPosition);
+    float pLat = asin(nDir.y);
+    float pLon = atan(nDir.z, nDir.x);
+
+    if (uPlanetFeature < 1.5) {
+      // Neptune Great Dark Spot
+      float dLat = (pLat + 0.35) * 2.8;
+      float dLon = (pLon - 0.5) * 1.6;
+      float sDist = sqrt(dLat*dLat + dLon*dLon);
+      float sMask = 1.0 - smoothstep(0.3, 0.65, sDist);
+      float sTurb = snoise(nDir * 6.0 + vec3(uTime * 0.02)) * 0.15;
+      surface = mix(surface, surface * (0.25 + sTurb), sMask);
+      // Bright companion cloud
+      float cDist = length(vec2((pLat + 0.17) * 4.0, (pLon - 0.85) * 3.0));
+      float cMask = (1.0 - smoothstep(0.2, 0.5, cDist)) * 0.35;
+      surface = mix(surface, vec3(0.55, 0.65, 0.8), cMask);
+
+    } else if (uPlanetFeature < 2.5) {
+      // Jupiter Great Red Spot
+      float dLat = (pLat + 0.38) * 2.2;
+      float dLon = (pLon - 1.0) * 1.4;
+      float sDist = sqrt(dLat*dLat + dLon*dLon);
+      float sMask = 1.0 - smoothstep(0.28, 0.6, sDist);
+      float sAngle = atan(dLat, dLon);
+      float swirl = snoise(vec3(cos(sAngle)*sDist*3.0, sin(sAngle)*sDist*3.0, uTime*0.015)) * 0.25;
+      vec3 redCol = mix(vec3(0.72, 0.25, 0.12), vec3(0.88, 0.45, 0.22), swirl + 0.5);
+      float inner = 1.0 - smoothstep(0.15, 0.40, sDist);
+      redCol = mix(redCol, redCol * 0.75, inner * 0.4);
+      surface = mix(surface, redCol, sMask);
+
+    } else if (uPlanetFeature < 3.5) {
+      // Saturn Polar Hexagon
+      float poleLat = abs(nDir.y);
+      if (poleLat > 0.88) {
+        float theta = atan(nDir.x, nDir.z);
+        float pDist = acos(clamp(abs(nDir.y), 0.0, 1.0));
+        float hexR = 0.12 + 0.018 * cos(6.0 * theta + uTime * 0.08);
+        float hexEdge = smoothstep(hexR - 0.012, hexR, pDist)
+                      * (1.0 - smoothstep(hexR, hexR + 0.012, pDist));
+        float hexIn = 1.0 - smoothstep(0.0, hexR, pDist);
+        float hexT = fbm(nDir * 18.0 + vec3(uTime * 0.04)) * 0.35;
+        surface = mix(surface, surface * (0.55 + hexT), hexIn * 0.55);
+        surface = mix(surface, vec3(0.92, 0.85, 0.58), hexEdge * 0.65);
+        float vortex = 1.0 - smoothstep(0.0, 0.03, pDist);
+        surface = mix(surface, surface * 0.4, vortex * 0.7);
+      }
+
+    } else if (uPlanetFeature < 4.5) {
+      // Earth Realistic Continents
+      float landMask = earthContinent(nDir);
+      float terrainH = fbm(nDir * 4.0 + uSeed * 5.0);
+      float desert = smoothstep(0.15, 0.4, abs(pLat)) * (1.0 - smoothstep(0.55, 0.8, abs(pLat)));
+      desert *= smoothstep(0.45, 0.6, terrainH);
+      vec3 greenLand = mix(uTerrainColor, vec3(0.18, 0.38, 0.12), 0.5);
+      vec3 desertCol = vec3(0.62, 0.52, 0.32);
+      vec3 mountCol = vec3(0.45, 0.38, 0.30);
+      vec3 tColor = mix(greenLand, desertCol, desert);
+      tColor = mix(tColor, mountCol, smoothstep(0.65, 0.78, terrainH) * 0.6);
+      float iceBlend = smoothstep(1.05, 1.25, abs(pLat));
+      tColor = mix(tColor, uIceColor, iceBlend);
+      vec3 oceanCol = mix(uOceanColor * 0.8, uOceanColor * 1.3, smoothstep(0.3, 0.5, landMask) * 0.5);
+      surface = mix(oceanCol, tColor, landMask);
+      float oceanIce = smoothstep(1.15, 1.35, abs(pLat)) * (1.0 - landMask);
+      surface = mix(surface, uIceColor * 0.95, oceanIce);
+    }
   }
 
   // Diffuse lighting (simple directional from above-right)
@@ -282,6 +395,12 @@ export default function ProceduralPlanet({ params, position = [0, 0, 0] }) {
   const surfaceStyleValue =
     params?.surfaceStyle === 'lava' ? 2 : params?.surfaceStyle === 'bands' ? 1 : 0
 
+  const planetFeatureValue =
+    params?.planetFeature === 'neptuneDarkSpot' ? 1 :
+    params?.planetFeature === 'jupiterRedSpot' ? 2 :
+    params?.planetFeature === 'saturnHexagon' ? 3 :
+    params?.planetFeature === 'earthContinents' ? 4 : 0
+
   const planetUniforms = useMemo(() => ({
     uTime: { value: 0 },
     uNoiseScale: { value: params?.noiseScale ?? 2 },
@@ -296,7 +415,8 @@ export default function ProceduralPlanet({ params, position = [0, 0, 0] }) {
     uBandColorA: { value: params?.bandColorA ?? new THREE.Color(0.6, 0.45, 0.3) },
     uBandColorB: { value: params?.bandColorB ?? new THREE.Color(0.8, 0.65, 0.45) },
     uPolarIce: { value: params?.polarIce === false ? 0 : 1 },
-  }), [params, surfaceStyleValue])
+    uPlanetFeature: { value: planetFeatureValue },
+  }), [params, surfaceStyleValue, planetFeatureValue])
 
   const cloudUniforms = useMemo(() => ({
     uTime: { value: 0 },
@@ -319,7 +439,7 @@ export default function ProceduralPlanet({ params, position = [0, 0, 0] }) {
   })
 
   return (
-    <group position={position}>
+    <group position={position} rotation={[0, 0, params?.axialTilt ?? 0]}>
       {/* Planet surface */}
       <mesh ref={planetRef}>
         <sphereGeometry args={[radius, 64, 64]} />
