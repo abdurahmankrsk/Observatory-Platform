@@ -174,6 +174,7 @@ export const KNOWN_OBJECTS = {
 
 /** @type {Record<string, import('../types/astronomy.js').CelestialObject>} */
 export const SOLAR_SYSTEM = {
+  sun: { id: 'sun', name: 'Sun', type: 'star', distance_au: 0.0, description: 'The star at the center of our Solar System — a G-type main-sequence star that provides the energy sustaining life on Earth.', fun_fact: 'The Sun accounts for 99.86% of the total mass in the Solar System.', star: { spectral_type: 'G2V', temperature_k: 5778 } },
   mercury: { id: 'mercury', name: 'Mercury', type: 'planet', distance_au: 0.387, description: 'The smallest planet and closest to the Sun — a cratered, airless rocky world.', fun_fact: 'Mercury has almost no atmosphere, so its surface swings from 430°C in daylight to -180°C at night.' },
   venus: { id: 'venus', name: 'Venus', type: 'planet', distance_au: 0.723, description: 'A rocky world shrouded in thick sulfuric-acid clouds — the hottest planet in the solar system.', fun_fact: 'Venus\'s runaway greenhouse atmosphere keeps its surface at about 465°C, hot enough to melt lead.' },
   earth: { id: 'earth', name: 'Earth', type: 'planet', distance_au: 1.0, description: 'Our home — an ocean world with continents, water clouds and the only known life in the universe.', fun_fact: 'Earth is the only planet not named after a Greek or Roman deity.' },
