@@ -179,7 +179,7 @@ function AppContent() {
           zIndex: 30,
         }}>
           <p className="text-label" style={{ color: 'rgba(79,172,254,0.3)', fontSize: '0.55rem' }}>
-            ASTRO OBSERVATORY v1.2 · NASA DATA
+            ASTRO OBSERVATORY v1.3 · NASA DATA
           </p>
         </div>
       )}
