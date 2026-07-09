@@ -119,46 +119,61 @@ varying vec3 vPosition;
 varying vec3 vWorldNormal;
 varying vec3 vViewDir;
 
-// ── Earth continent SDF (lat/lon ellipses → recognisable landmasses) ──
+// ── Earth continent field (Gaussian influence + noise → fractal coastlines) ──
 float earthContinent(vec3 nDir) {
   float lat = asin(nDir.y);
   float lon = atan(nDir.z, nDir.x);
-  float land = 0.0;
-  float d;
-  // Africa
-  d = length(vec2((lon-0.26)/0.45, (lat-0.26)/0.35)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-0.44)/0.30, (lat+0.09)/0.42)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-0.78)/0.15, (lat-0.12)/0.12)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-0.82)/0.06, (lat+0.35)/0.13)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+
+  // Soft Gaussian influence: high near continents, zero in open ocean
+  float inf = 0.0;
+
+  // Africa (elongated N-S)
+  inf = max(inf, 0.92*exp(-3.0*(pow((lon-0.30)/0.40,2.0)+pow((lat-0.08)/0.52,2.0))));
+  inf = max(inf, 0.70*exp(-5.0*(pow((lon+0.02)/0.18,2.0)+pow((lat-0.10)/0.16,2.0))));
+  inf = max(inf, 0.55*exp(-7.0*(pow((lon-0.78)/0.12,2.0)+pow((lat-0.06)/0.10,2.0))));
+  inf = max(inf, 0.45*exp(-8.0*(pow((lon-0.82)/0.06,2.0)+pow((lat+0.35)/0.12,2.0))));
+
   // Europe
-  d = length(vec2((lon-0.07)/0.22, (lat-0.82)/0.18)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-0.22)/0.12, (lat-1.08)/0.14)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon+0.05)/0.05, (lat-0.92)/0.08)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  // Asia
-  d = length(vec2((lon-1.22)/0.85, (lat-0.95)/0.28)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-1.83)/0.35, (lat-0.58)/0.30)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-1.75)/0.18, (lat-0.17)/0.20)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-1.35)/0.15, (lat-0.30)/0.25)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-0.82)/0.15, (lat-0.38)/0.15)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-0.55)/0.30, (lat-0.58)/0.22)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-1.92)/0.25, (lat+0.10)/0.08)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon-2.38)/0.06, (lat-0.62)/0.14)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  inf = max(inf, 0.72*exp(-4.5*(pow((lon-0.12)/0.28,2.0)+pow((lat-0.82)/0.18,2.0))));
+  inf = max(inf, 0.55*exp(-6.0*(pow((lon-0.22)/0.12,2.0)+pow((lat-1.08)/0.14,2.0))));
+  inf = max(inf, 0.40*exp(-10.0*(pow((lon+0.05)/0.05,2.0)+pow((lat-0.93)/0.06,2.0))));
+  inf = max(inf, 0.50*exp(-7.0*(pow((lon+0.06)/0.08,2.0)+pow((lat-0.70)/0.08,2.0))));
+  inf = max(inf, 0.42*exp(-9.0*(pow((lon-0.22)/0.05,2.0)+pow((lat-0.72)/0.09,2.0))));
+
+  // Asia (massive, many overlapping blobs)
+  inf = max(inf, 0.95*exp(-1.2*(pow((lon-1.20)/0.90,2.0)+pow((lat-0.92)/0.30,2.0))));
+  inf = max(inf, 0.78*exp(-2.5*(pow((lon-1.88)/0.38,2.0)+pow((lat-0.55)/0.30,2.0))));
+  inf = max(inf, 0.72*exp(-5.0*(pow((lon-1.35)/0.14,2.0)+pow((lat-0.25)/0.25,2.0))));
+  inf = max(inf, 0.60*exp(-4.5*(pow((lon-1.78)/0.16,2.0)+pow((lat-0.15)/0.18,2.0))));
+  inf = max(inf, 0.60*exp(-5.5*(pow((lon-0.80)/0.14,2.0)+pow((lat-0.36)/0.14,2.0))));
+  inf = max(inf, 0.65*exp(-4.0*(pow((lon-0.55)/0.28,2.0)+pow((lat-0.60)/0.16,2.0))));
+  inf = max(inf, 0.40*exp(-5.0*(pow((lon-1.92)/0.30,2.0)+pow((lat+0.08)/0.06,2.0))));
+  inf = max(inf, 0.38*exp(-9.0*(pow((lon-2.40)/0.06,2.0)+pow((lat-0.62)/0.15,2.0))));
+
   // North America
-  d = length(vec2((lon+1.65)/0.55, (lat-0.82)/0.30)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon+1.74)/0.18, (lat-0.38)/0.18)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon+2.62)/0.22, (lat-1.10)/0.12)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon+0.70)/0.18, (lat-1.20)/0.14)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  inf = max(inf, 0.88*exp(-2.0*(pow((lon+1.65)/0.55,2.0)+pow((lat-0.85)/0.30,2.0))));
+  inf = max(inf, 0.70*exp(-3.5*(pow((lon+1.50)/0.35,2.0)+pow((lat-0.55)/0.18,2.0))));
+  inf = max(inf, 0.55*exp(-5.0*(pow((lon+1.78)/0.14,2.0)+pow((lat-0.35)/0.16,2.0))));
+  inf = max(inf, 0.55*exp(-5.5*(pow((lon+2.62)/0.20,2.0)+pow((lat-1.10)/0.12,2.0))));
+  inf = max(inf, 0.60*exp(-5.0*(pow((lon+0.72)/0.17,2.0)+pow((lat-1.20)/0.14,2.0))));
+
   // South America
-  d = length(vec2((lon+0.82)/0.28, (lat+0.22)/0.50)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon+1.22)/0.20, (lat-0.08)/0.15)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
-  d = length(vec2((lon+1.17)/0.12, (lat+0.65)/0.25)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  inf = max(inf, 0.82*exp(-2.5*(pow((lon+0.88)/0.25,2.0)+pow((lat+0.15)/0.48,2.0))));
+  inf = max(inf, 0.60*exp(-5.0*(pow((lon+1.22)/0.18,2.0)+pow((lat-0.08)/0.12,2.0))));
+  inf = max(inf, 0.50*exp(-5.0*(pow((lon+1.15)/0.10,2.0)+pow((lat+0.70)/0.22,2.0))));
+
   // Australia
-  d = length(vec2((lon-2.32)/0.32, (lat+0.44)/0.18)); land = max(land, 1.0-smoothstep(0.7,1.0,d));
+  inf = max(inf, 0.70*exp(-3.5*(pow((lon-2.32)/0.30,2.0)+pow((lat+0.42)/0.18,2.0))));
+  inf = max(inf, 0.32*exp(-9.0*(pow((lon-2.95)/0.05,2.0)+pow((lat+0.68)/0.08,2.0))));
+
   // Antarctica
-  land = max(land, 1.0-smoothstep(-1.22, -1.10, lat));
-  // Noisy coastlines for natural look
-  float cn = snoise(nDir * 10.0) * 0.14;
-  land = smoothstep(0.35+cn, 0.55, land);
+  inf = max(inf, 0.85*exp(-4.5*pow((lat+1.30)/0.22,2.0)));
+
+  // Fractal coastlines: fbm noise + influence field thresholding
+  float coastNoise = fbm(nDir * 3.5);
+  float elevation = coastNoise * 0.35 + inf * 0.75;
+  float seaLevel = 0.45;
+  float land = smoothstep(seaLevel - 0.04, seaLevel + 0.04, elevation);
   return clamp(land, 0.0, 1.0);
 }
 
@@ -236,20 +251,26 @@ void main() {
       surface = mix(surface, redCol, sMask);
 
     } else if (uPlanetFeature < 3.5) {
-      // Saturn Polar Hexagon
+      // Saturn Polar Hexagon (proper hexagonal polar boundary)
       float poleLat = abs(nDir.y);
-      if (poleLat > 0.88) {
+      if (poleLat > 0.86) {
         float theta = atan(nDir.x, nDir.z);
         float pDist = acos(clamp(abs(nDir.y), 0.0, 1.0));
-        float hexR = 0.12 + 0.018 * cos(6.0 * theta + uTime * 0.08);
-        float hexEdge = smoothstep(hexR - 0.012, hexR, pDist)
-                      * (1.0 - smoothstep(hexR, hexR + 0.012, pDist));
+        // Proper hexagon: modular angle fold into one sextant
+        float hexAngle = mod(theta + 0.5236, 1.0472) - 0.5236;
+        float baseR = 0.11;
+        float hexR = baseR / max(cos(hexAngle), 0.55);
+        float hexEdge = smoothstep(hexR - 0.014, hexR, pDist)
+                      * (1.0 - smoothstep(hexR, hexR + 0.014, pDist));
         float hexIn = 1.0 - smoothstep(0.0, hexR, pDist);
         float hexT = fbm(nDir * 18.0 + vec3(uTime * 0.04)) * 0.35;
-        surface = mix(surface, surface * (0.55 + hexT), hexIn * 0.55);
-        surface = mix(surface, vec3(0.92, 0.85, 0.58), hexEdge * 0.65);
-        float vortex = 1.0 - smoothstep(0.0, 0.03, pDist);
-        surface = mix(surface, surface * 0.4, vortex * 0.7);
+        // Slightly blue-tinted interior
+        vec3 hexInterior = surface * vec3(0.82, 0.88, 1.05) * (0.55 + hexT);
+        surface = mix(surface, hexInterior, hexIn * 0.55);
+        // Blue-gray hexagonal edge
+        surface = mix(surface, vec3(0.72, 0.82, 0.92), hexEdge * 0.7);
+        float vortex = 1.0 - smoothstep(0.0, 0.025, pDist);
+        surface = mix(surface, surface * vec3(0.35, 0.42, 0.55), vortex * 0.75);
       }
 
     } else if (uPlanetFeature < 4.5) {
