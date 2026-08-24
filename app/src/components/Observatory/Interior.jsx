@@ -115,12 +115,11 @@ function Door() {
 }
 
 /** Small glowing instrument indicator dot */
-function IndicatorLight({ position, color, intensity = 0.6 }) {
+function IndicatorLight({ position, color }) {
   return (
     <mesh position={position}>
       <circleGeometry args={[0.06, 8]} />
       <meshBasicMaterial color={color} />
-      <pointLight color={color} intensity={intensity} distance={1.5} decay={3} />
     </mesh>
   )
 }
@@ -502,7 +501,7 @@ export default function Interior() {
       {/* Console blue glow fill */}
       <pointLight position={[0, 2.5, -4]}   color="#4FACFE" intensity={1.5} distance={8} decay={2} />
 
-      {/* Wall sconces — now with cone geometry for uplighting effect */}
+      {/* Wall sconces — with cone geometry for uplighting effect */}
       {[0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].map((angle, i) => (
         <group
           key={`sconce-${i}`}
@@ -524,7 +523,7 @@ export default function Interior() {
             <boxGeometry args={[0.42, 0.03, 0.03]} />
             <meshBasicMaterial color="#B8D8FF" />
           </mesh>
-          <pointLight color="#AACFEE" intensity={5} distance={13} decay={1.7} />
+          {i % 2 === 0 && <pointLight color="#AACFEE" intensity={4} distance={10} decay={1.7} />}
         </group>
       ))}
 
