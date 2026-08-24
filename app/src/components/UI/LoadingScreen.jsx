@@ -17,8 +17,8 @@ export default function LoadingScreen() {
   const { t } = useTranslation()
   const containerRef = useRef()
   const progressRef = useRef()
+  const counterRef = useRef()
   const [msgIndex, setMsgIndex] = useState(0)
-  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
     // Cycle through warp messages
@@ -28,18 +28,22 @@ export default function LoadingScreen() {
       setMsgIndex(i)
     }, 1200)
 
-    // Animate progress bar
+    // Animate progress bar directly via DOM refs to avoid 60-120 React re-renders per second
     const progObj = { val: 0 }
-    anime({
+    const progressAnim = anime({
       targets: progObj,
       val: 100,
       duration: 6000,
       easing: 'easeInOutExpo',
-      update: () => setProgress(Math.floor(progObj.val)),
+      update: () => {
+        const p = Math.floor(progObj.val)
+        if (progressRef.current) progressRef.current.style.width = `${p}%`
+        if (counterRef.current) counterRef.current.innerText = `${p}%`
+      },
     })
 
     // Entrance animation
-    anime({
+    const enterAnim = anime({
       targets: containerRef.current,
       opacity: [0, 1],
       duration: 300,
@@ -48,6 +52,8 @@ export default function LoadingScreen() {
 
     return () => {
       clearInterval(interval)
+      progressAnim.pause()
+      enterAnim.pause()
     }
   }, [])
 
@@ -58,8 +64,7 @@ export default function LoadingScreen() {
       ref={containerRef}
       className="fixed inset-0 flex flex-col items-center justify-center"
       style={{
-        background: 'rgba(1,10,20,0.75)',
-        backdropFilter: 'blur(4px)',
+        background: 'rgba(1,10,20,0.85)',
         zIndex: 50,
         opacity: 0,
       }}
@@ -137,15 +142,14 @@ export default function LoadingScreen() {
       }}>
         <div ref={progressRef} style={{
           height: '100%',
-          width: `${progress}%`,
+          width: '0%',
           background: 'linear-gradient(90deg, var(--color-blue), var(--color-glow))',
           boxShadow: '0 0 8px var(--color-blue)',
-          transition: 'width 0.1s linear',
         }} />
       </div>
 
-      <p className="text-mono" style={{ color: 'var(--color-dim)', fontSize: '0.7rem', marginTop: 12 }}>
-        {progress}%
+      <p ref={counterRef} className="text-mono" style={{ color: 'var(--color-dim)', fontSize: '0.7rem', marginTop: 12 }}>
+        0%
       </p>
     </div>
   )
