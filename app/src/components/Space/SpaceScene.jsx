@@ -26,7 +26,7 @@ import ObjectGenerator from './ObjectGenerator'
 
 
 // ── Warp Speed Effect ─────────────────────────────────────────────────────
-const WARP_LINE_COUNT = 8000
+const WARP_LINE_COUNT = 2500
 
 function WarpLines({ active }) {
   const ref = useRef()
@@ -145,12 +145,12 @@ export default function SpaceScene() {
   return (
     <div className="fixed inset-0">
       <Canvas
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         camera={{ position: [0, 0, 8], fov: 60, near: 0.01, far: 2000 }}
-        dpr={Math.min(window.devicePixelRatio, 2)}
+        dpr={[1, 1.5]}
       >
         {/* Background stars */}
-        <Stars radius={400} depth={100} count={12000} factor={4} saturation={0.1} fade />
+        <Stars radius={400} depth={100} count={5000} factor={4} saturation={0.1} fade />
 
         {/* Ambient light for seeing non-emissive geometry */}
         <ambientLight intensity={0.05} />
@@ -183,14 +183,14 @@ export default function SpaceScene() {
         )}
 
         {/* Post-processing effects */}
-        <EffectComposer>
+        <EffectComposer multisampling={0}>
           <Bloom
-            intensity={isFlying ? 2.5 : 1.0}
+            intensity={isFlying ? 1.8 : 1.0}
             luminanceThreshold={0.2}
             luminanceSmoothing={0.9}
             blendFunction={BlendFunction.SCREEN}
           />
-          <Noise opacity={0.0175} blendFunction={BlendFunction.ADD} />
+          <Noise opacity={0.015} blendFunction={BlendFunction.ADD} />
           <Vignette eskil={false} offset={0.1} darkness={isViewing ? 0.5 : 0.8} />
         </EffectComposer>
       </Canvas>
