@@ -21,7 +21,7 @@ export default function QuasarGenerator({ params, position = [0, 0, 0] }) {
   // Faint host-galaxy disk of stars surrounding the AGN.
   const hostGeo = useMemo(() => {
     if (!params?.hostGlow) return null
-    const count = 12000
+    const count = 5000
     const geo = new THREE.BufferGeometry()
     const pos = new Float32Array(count * 3)
     const radius = (params?.diskOuter ?? 5) * 2.4
@@ -40,10 +40,6 @@ export default function QuasarGenerator({ params, position = [0, 0, 0] }) {
     const t = s.clock.elapsedTime
     if (hostRef.current) hostRef.current.rotation.y = t * 0.02
     if (nucleusRef.current) {
-      // Gentle "breathing" flicker. Earlier this scaled an already-saturated
-      // additive sphere, so each peak blew the whole core to flat white (the
-      // "periodically turns white" bug). Now we pulse opacity within a low range
-      // and only nudge the scale, so it shimmers instead of saturating.
       const pulse = 0.5 + 0.5 * Math.sin(t * 1.5)
       nucleusRef.current.scale.setScalar(1 + 0.05 * pulse)
       nucleusRef.current.material.opacity = 0.22 + 0.12 * pulse
@@ -57,7 +53,7 @@ export default function QuasarGenerator({ params, position = [0, 0, 0] }) {
         <points ref={hostRef} geometry={hostGeo} rotation={[params?.diskTilt ?? 0.5, 0, 0]}>
           <pointsMaterial
             color={params?.hostColor ?? new THREE.Color(0.5, 0.55, 0.8)}
-            size={0.05}
+            size={0.075}
             sizeAttenuation
             transparent
             opacity={0.5}
