@@ -120,14 +120,15 @@ export default function InfoPanel() {
   // Slide-in animation when entering targeting or viewing state
   useEffect(() => {
     if ((isTargeting || isViewing) && panelRef.current) {
-      anime({
+      const anim = anime({
         targets: panelRef.current,
         translateX: [400, 0],
         translateY: isMobile ? [0, 0] : ['-50%', '-50%'],
         opacity: [0, 1],
-        duration: 600,
-        easing: 'spring(1, 80, 10, 0)',
+        duration: 450,
+        easing: 'easeOutCubic',
       })
+      return () => anim.pause()
     }
   }, [isTargeting, isViewing, isMobile])
 
