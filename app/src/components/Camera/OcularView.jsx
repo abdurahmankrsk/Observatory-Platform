@@ -17,20 +17,24 @@ export default function OcularView() {
 
   useEffect(() => {
     if (!containerRef.current) return
+    let anim
     if (isTargeting) {
-      anime({
+      anim = anime({
         targets: containerRef.current,
         opacity: [0, 1],
-        duration: 800,
+        duration: 500,
         easing: 'easeOutQuad',
       })
     } else {
-      anime({
+      anim = anime({
         targets: containerRef.current,
         opacity: [1, 0],
-        duration: 400,
+        duration: 300,
         easing: 'easeInQuad',
       })
+    }
+    return () => {
+      if (anim) anim.pause()
     }
   }, [isTargeting])
 
