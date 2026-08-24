@@ -15,7 +15,7 @@ import { useTranslation } from '../../i18n'
 function StarField() {
   return (
     <>
-      <Stars radius={300} depth={100} count={12000} factor={5} saturation={0.05} fade />
+      <Stars radius={300} depth={100} count={5000} factor={5} saturation={0.05} fade />
       <ambientLight intensity={0} />
     </>
   )
@@ -63,6 +63,8 @@ export default function StartScreen() {
       opacity: [0, 1],
       duration: 600,
     }, '-=400')
+
+    return () => tl.pause()
   }, [])
 
   const handleEnter = () => {
@@ -82,15 +84,12 @@ export default function StartScreen() {
       <div className="absolute inset-0">
         <Canvas
           camera={{ position: [0, 0, 5], fov: 75 }}
-          gl={{ antialias: false, alpha: false }}
+          gl={{ antialias: false, alpha: false, powerPreference: 'high-performance' }}
           dpr={1}
         >
           <StarField />
         </Canvas>
       </div>
-
-      {/* Scanlines overlay */}
-      <div className="scanlines" />
 
       {/* Content — centered */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
