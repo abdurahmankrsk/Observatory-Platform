@@ -229,9 +229,9 @@ export default function ObservatoryScene() {
   return (
     <div className="fixed inset-0">
       <Canvas
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         camera={{ position: [0, 5, 35], fov: 70, near: 0.01, far: 500 }}
-        dpr={Math.min(window.devicePixelRatio, 2)}
+        dpr={[1, 1.5]}
         shadows={{ type: 1 /* THREE.PCFShadowMap */ }}
       >
         <Suspense fallback={null}>
@@ -240,7 +240,7 @@ export default function ObservatoryScene() {
 
         <EntryCamera />
 
-        <EffectComposer>
+        <EffectComposer multisampling={0}>
           <Bloom
             intensity={0.85}
             luminanceThreshold={0.28}
@@ -251,7 +251,7 @@ export default function ObservatoryScene() {
             offset={new Vector2(0.0008, 0.0008)}
             radialModulation={false}
           />
-          <Noise opacity={0.018} blendFunction={BlendFunction.ADD} />
+          <Noise opacity={0.015} blendFunction={BlendFunction.ADD} />
           <Vignette eskil={false} offset={0.08} darkness={0.72} />
         </EffectComposer>
       </Canvas>
