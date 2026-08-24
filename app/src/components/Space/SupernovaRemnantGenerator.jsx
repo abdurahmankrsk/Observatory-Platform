@@ -22,7 +22,7 @@ export default function SupernovaRemnantGenerator({ params, position = [0, 0, 0]
 
   const radius = params?.radius ?? 5.5
   const thickness = params?.shellThickness ?? 0.2
-  const count = params?.particleCount ?? 50000
+  const count = params?.particleCount ?? 20000
 
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
@@ -153,7 +153,7 @@ export default function SupernovaRemnantGenerator({ params, position = [0, 0, 0]
     <group ref={groupRef} position={position}>
       <points ref={shellRef} geometry={geometry}>
         <pointsMaterial
-          size={0.06}
+          size={0.08}
           sizeAttenuation
           vertexColors
           transparent
