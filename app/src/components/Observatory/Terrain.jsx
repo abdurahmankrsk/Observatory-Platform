@@ -13,31 +13,31 @@ import * as THREE from 'three'
 
 // ── Canvas textures (colour + relief) ───────────────────────────────────────
 function makeGrassTexture() {
-  const s = 256
+  const s = 128
   const cv = document.createElement('canvas'); cv.width = cv.height = s
   const x = cv.getContext('2d')
   x.fillStyle = '#0e1a12'; x.fillRect(0, 0, s, s)
-  for (let i = 0; i < 150; i++) {              // soft darker/lighter patches
+  for (let i = 0; i < 50; i++) {              // soft darker/lighter patches
     const g = 22 + Math.random() * 42
     x.fillStyle = `rgba(${g * 0.55},${g},${g * 0.6},0.22)`
-    x.beginPath(); x.arc(Math.random() * s, Math.random() * s, 8 + Math.random() * 40, 0, 7); x.fill()
+    x.beginPath(); x.arc(Math.random() * s, Math.random() * s, 8 + Math.random() * 20, 0, 7); x.fill()
   }
-  for (let i = 0; i < 6000; i++) {             // blade speckle
+  for (let i = 0; i < 1200; i++) {             // blade speckle
     const g = 30 + Math.random() * 80
     x.fillStyle = `rgba(${g * 0.5},${g},${g * 0.55},${0.25 + Math.random() * 0.5})`
-    x.fillRect(Math.random() * s, Math.random() * s, 1, 2 + Math.random() * 4)
+    x.fillRect(Math.random() * s, Math.random() * s, 1, 2 + Math.random() * 3)
   }
   const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t
 }
 function makeDirtTexture() {
-  const s = 256
+  const s = 128
   const cv = document.createElement('canvas'); cv.width = cv.height = s
   const x = cv.getContext('2d')
   x.fillStyle = '#221b13'; x.fillRect(0, 0, s, s)
-  for (let i = 0; i < 1400; i++) {             // pebbles / gravel
+  for (let i = 0; i < 300; i++) {             // pebbles / gravel
     const g = 28 + Math.random() * 58
     x.fillStyle = `rgba(${g},${g * 0.92},${g * 0.78},${0.3 + Math.random() * 0.5})`
-    const r = 1 + Math.random() * 3.5
+    const r = 1 + Math.random() * 3
     x.beginPath(); x.arc(Math.random() * s, Math.random() * s, r, 0, 7); x.fill()
   }
   const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t
@@ -88,7 +88,7 @@ export default function Terrain() {
 
   // ── Ground (displaced hilltop) ──
   const groundGeo = useMemo(() => {
-    const g = new THREE.PlaneGeometry(340, 340, 150, 150)
+    const g = new THREE.PlaneGeometry(340, 340, 60, 60)
     g.rotateX(-Math.PI / 2)
     const p = g.attributes.position
     for (let i = 0; i < p.count; i++) p.setY(i, groundHeight(p.getX(i), p.getZ(i)))
@@ -98,27 +98,27 @@ export default function Terrain() {
 
   // ── Grass (instanced small blades, placed in tufts for a lush look) ──
   const grass = useMemo(() => {
-    const maxBlades = 6500
-    const blade = new THREE.ConeGeometry(0.04, 0.42, 3, 1, true)
-    blade.translate(0, 0.21, 0)
+    const maxBlades = 1800
+    const blade = new THREE.ConeGeometry(0.05, 0.46, 3, 1, true)
+    blade.translate(0, 0.23, 0)
     const mesh = new THREE.InstancedMesh(
       blade, new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 }), maxBlades)
     const r = makeRng(7)
     const d = new THREE.Object3D()
     const c = new THREE.Color()
     let n = 0
-    for (let ci = 0; ci < 1100 && n < maxBlades; ci++) {
+    for (let ci = 0; ci < 400 && n < maxBlades; ci++) {
       const ang = r() * Math.PI * 2
       const rad = 9.5 + Math.pow(r(), 0.8) * 34      // concentrated near the building
       const cx = Math.cos(ang) * rad, cz = Math.sin(ang) * rad
       if (onPath(cx, cz)) continue
-      const blades = 4 + Math.floor(r() * 5)         // 4–8 blades per tuft
+      const blades = 4 + Math.floor(r() * 4)         // 4–7 blades per tuft
       const hue = 0.30 + r() * 0.06
       for (let b = 0; b < blades && n < maxBlades; b++) {
-        const x = cx + (r() - 0.5) * 0.5, z = cz + (r() - 0.5) * 0.5
+        const x = cx + (r() - 0.5) * 0.6, z = cz + (r() - 0.5) * 0.6
         d.position.set(x, groundHeight(x, z), z)
         d.rotation.set((r() - 0.5) * 0.4, r() * Math.PI * 2, (r() - 0.5) * 0.4)
-        const s = 0.6 + r() * 0.9
+        const s = 0.8 + r() * 0.9
         d.scale.set(s * (0.7 + r() * 0.5), s, s * (0.7 + r() * 0.5))
         d.updateMatrix()
         mesh.setMatrixAt(n, d.matrix)
