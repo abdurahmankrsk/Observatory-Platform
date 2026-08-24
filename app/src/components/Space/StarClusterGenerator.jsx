@@ -24,7 +24,7 @@ export default function StarClusterGenerator({ params, position = [0, 0, 0] }) {
   const groupRef = useRef()
   const isGlobular = (params?.clusterClass ?? 'open') === 'globular'
   const radius = params?.radius ?? 4
-  const count = params?.starCount ?? (isGlobular ? 50000 : 1500)
+  const count = params?.starCount ?? (isGlobular ? 16000 : 1200)
 
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
@@ -72,7 +72,7 @@ export default function StarClusterGenerator({ params, position = [0, 0, 0] }) {
     <group ref={groupRef} position={position}>
       <points geometry={geometry}>
         <pointsMaterial
-          size={isGlobular ? 0.05 : 0.12}
+          size={isGlobular ? 0.08 : 0.14}
           sizeAttenuation
           vertexColors
           transparent
