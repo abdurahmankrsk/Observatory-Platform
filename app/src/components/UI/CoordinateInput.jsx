@@ -26,14 +26,15 @@ export default function CoordinateInput() {
   const identifyMutation = useIdentifyMutation()
 
   useEffect(() => {
-    anime({
+    const anim = anime({
       targets: panelRef.current,
       translateX: [320, 0],
       opacity: [0, 1],
-      duration: 700,
-      easing: 'spring(1, 80, 10, 0)',
-      delay: 200,
+      duration: 450,
+      easing: 'easeOutCubic',
+      delay: 150,
     })
+    return () => anim.pause()
   }, [])
 
   const handlePoint = async () => {
