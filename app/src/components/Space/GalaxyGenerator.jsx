@@ -15,7 +15,7 @@ import * as THREE from 'three'
 import { createNoise3D } from 'simplex-noise'
 
 function buildSpiral(params, noise3D) {
-  const count = params?.particleCount ?? 90000
+  const count = params?.particleCount ?? 28000
   const arms = params?.spiralArms ?? 3
   const radius = params?.radius ?? 7
   const armSpin = params?.armSpin ?? 1.5
@@ -79,7 +79,7 @@ function gauss() {
 }
 
 function buildElliptical(params) {
-  const count = params?.particleCount ?? 90000
+  const count = params?.particleCount ?? 28000
   const radius = params?.radius ?? 7
   const geo = new THREE.BufferGeometry()
   const positions = new Float32Array(count * 3)
@@ -107,7 +107,7 @@ function buildElliptical(params) {
 }
 
 function buildIrregular(params, noise3D) {
-  const count = params?.particleCount ?? 70000
+  const count = params?.particleCount ?? 22000
   const radius = params?.radius ?? 7
   const geo = new THREE.BufferGeometry()
   const positions = new Float32Array(count * 3)
@@ -160,7 +160,7 @@ export default function GalaxyGenerator({ params, position = [0, 0, 0] }) {
     <group ref={groupRef} position={position}>
       <points geometry={geometry}>
         <pointsMaterial
-          size={cls === 'elliptical' ? 0.05 : 0.04}
+          size={cls === 'elliptical' ? 0.065 : 0.055}
           sizeAttenuation
           vertexColors
           transparent
