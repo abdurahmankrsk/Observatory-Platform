@@ -17,7 +17,7 @@ export default function Nebula({ params, position = [0, 0, 0] }) {
 
   const noise3D = useMemo(() => createNoise3D(), [])
 
-  const count = params?.particleCount ?? 70000
+  const count = params?.particleCount ?? 24000
   const nebulaRadius = params?.radius ?? 6
   const spread = params?.spread ?? 0.7
   const nebulaStyle = params?.nebulaStyle ?? 'emission'
@@ -133,7 +133,7 @@ export default function Nebula({ params, position = [0, 0, 0] }) {
       <points ref={points1Ref} geometry={geo1}>
         <pointsMaterial
           color={primary}
-          size={absorbing ? 0.12 : 0.06}
+          size={absorbing ? 0.16 : 0.085}
           sizeAttenuation
           transparent
           opacity={absorbing ? 0.8 : 0.45}
@@ -146,7 +146,7 @@ export default function Nebula({ params, position = [0, 0, 0] }) {
       <points ref={points2Ref} geometry={geo2}>
         <pointsMaterial
           color={secondary}
-          size={0.1}
+          size={0.14}
           sizeAttenuation
           transparent
           opacity={absorbing ? 0.5 : 0.25}
