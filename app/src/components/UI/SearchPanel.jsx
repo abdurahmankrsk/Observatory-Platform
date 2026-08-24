@@ -106,14 +106,15 @@ export default function SearchPanel() {
 
   // Slide-in animation on mount
   useEffect(() => {
-    anime({
+    const anim = anime({
       targets: panelRef.current,
       translateX: [-320, 0],
       translateY: isMobile ? [0, 0] : ['-50%', '-50%'],
       opacity: [0, 1],
-      duration: 700,
-      easing: 'spring(1, 80, 10, 0)',
+      duration: 450,
+      easing: 'easeOutCubic',
     })
+    return () => anim.pause()
   }, [isMobile])
 
   // Abort any in-flight request on unmount.
